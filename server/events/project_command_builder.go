@@ -2,6 +2,7 @@ package events
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -64,7 +65,7 @@ type DefaultProjectCommandBuilder struct {
 
 // See ProjectCommandBuilder.BuildAutoplanCommands.
 func (p *DefaultProjectCommandBuilder) BuildAutoplanCommands(ctx *CommandContext) ([]models.ProjectCommandContext, error) {
-	projCtxs, err := p.buildPlanAllCommands(ctx, nil, false)
+	projCtxs, err := p.buildPlanAllCommands(ctx, nil, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +83,7 @@ func (p *DefaultProjectCommandBuilder) BuildAutoplanCommands(ctx *CommandContext
 // See ProjectCommandBuilder.BuildPlanCommands.
 func (p *DefaultProjectCommandBuilder) BuildPlanCommands(ctx *CommandContext, cmd *CommentCommand) ([]models.ProjectCommandContext, error) {
 	if !cmd.IsForSpecificProject() {
-		return p.buildPlanAllCommands(ctx, cmd.Flags, cmd.Verbose)
+		return p.buildPlanAllCommands(ctx, cmd.Flags, cmd.Verbose, cmd.All)
 	}
 	pcc, err := p.buildProjectPlanCommand(ctx, cmd)
 	return []models.ProjectCommandContext{pcc}, err
@@ -99,7 +100,7 @@ func (p *DefaultProjectCommandBuilder) BuildApplyCommands(ctx *CommandContext, c
 
 // buildPlanAllCommands builds plan contexts for all projects we determine were
 // modified in this ctx.
-func (p *DefaultProjectCommandBuilder) buildPlanAllCommands(ctx *CommandContext, commentFlags []string, verbose bool) ([]models.ProjectCommandContext, error) {
+func (p *DefaultProjectCommandBuilder) buildPlanAllCommands(ctx *CommandContext, commentFlags []string, verbose bool, all bool) ([]models.ProjectCommandContext, error) {
 	// Need to lock the workspace we're about to clone to.
 	workspace := DefaultWorkspace
 	unlockFn, err := p.WorkingDirLocker.TryLock(ctx.BaseRepo.FullName, ctx.Pull.Num, workspace)
@@ -110,6 +111,11 @@ func (p *DefaultProjectCommandBuilder) buildPlanAllCommands(ctx *CommandContext,
 	ctx.Log.Debug("got workspace lock")
 	defer unlockFn()
 
+	repoDir, _, err := p.WorkingDir.Clone(ctx.Log, ctx.BaseRepo, ctx.HeadRepo, ctx.Pull, workspace)
+	if err != nil {
+		return nil, err
+	}
+
 	// We'll need the list of modified files.
 	modifiedFiles, err := p.VCSClient.GetModifiedFiles(ctx.BaseRepo, ctx.Pull)
 	if err != nil {
@@ -117,9 +123,16 @@ func (p *DefaultProjectCommandBuilder) buildPlanAllCommands(ctx *CommandContext,
 	}
 	ctx.Log.Debug("%d files were modified in this pull request", len(modifiedFiles))
 
-	repoDir, _, err := p.WorkingDir.Clone(ctx.Log, ctx.BaseRepo, ctx.HeadRepo, ctx.Pull, workspace)
-	if err != nil {
-		return nil, err
+	// If the --all flag has been given we just suppose all files have been
+	// modified.
+	if all {
+		lsCmd := exec.Command("git", "ls-tree", "-r", "--name-only", "HEAD")
+		lsCmd.Dir = repoDir
+		lsOut, err := lsCmd.CombinedOutput()
+		if err != nil {
+			return nil, errors.Wrapf(err, "running git ls-tree -r --name-only HEAD: %s", string(lsOut))
+		}
+		modifiedFiles = strings.Split(string(lsOut), "\n")
 	}
 
 	// Parse config file if it exists.

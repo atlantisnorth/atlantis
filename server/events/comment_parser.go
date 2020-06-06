@@ -37,6 +37,7 @@ const (
 	verboseFlagLong    = "verbose"
 	verboseFlagShort   = ""
 	atlantisExecutable = "atlantis"
+	allFlag            = "all"
 )
 
 // multiLineRegex is used to ignore multi-line comments since those aren't valid
@@ -165,6 +166,7 @@ func (e *CommentParser) Parse(comment string, vcsHost models.VCSHostType) Commen
 	var dir string
 	var project string
 	var verbose bool
+	var all bool
 	var flagSet *pflag.FlagSet
 	var name models.CommandName
 
@@ -178,6 +180,7 @@ func (e *CommentParser) Parse(comment string, vcsHost models.VCSHostType) Commen
 		flagSet.StringVarP(&dir, dirFlagLong, dirFlagShort, "", "Which directory to run plan in relative to root of repo, ex. 'child/dir'.")
 		flagSet.StringVarP(&project, projectFlagLong, projectFlagShort, "", fmt.Sprintf("Which project to run plan for. Refers to the name of the project configured in %s. Cannot be used at same time as workspace or dir flags.", yaml.AtlantisYAMLFilename))
 		flagSet.BoolVarP(&verbose, verboseFlagLong, verboseFlagShort, false, "Append Atlantis log to comment.")
+		flagSet.BoolVar(&all, allFlag, false, "Run plan on all projects.")
 	case models.ApplyCommand.String():
 		name = models.ApplyCommand
 		flagSet = pflag.NewFlagSet(models.ApplyCommand.String(), pflag.ContinueOnError)
@@ -227,6 +230,11 @@ func (e *CommentParser) Parse(comment string, vcsHost models.VCSHostType) Commen
 		return CommentParseResult{CommentResponse: e.errMarkdown(fmt.Sprintf("invalid workspace: %q", workspace), command, flagSet)}
 	}
 
+	if all && (project != "" || workspace != "" || dir != "") {
+		err := fmt.Sprintf("cannot use --%s at same time as same time as -%s/--%s, -%s/--%s or -%s/--%s", allFlag, projectFlagShort, projectFlagLong, dirFlagShort, dirFlagLong, workspaceFlagShort, workspaceFlagLong)
+		return CommentParseResult{CommentResponse: e.errMarkdown(err, command, flagSet)}
+	}
+
 	// If project is specified, dir or workspace should not be set. Since we
 	// dir/workspace have defaults we can't detect if the user set the flag
 	// to the default or didn't set the flag so there is an edge case here we
@@ -238,7 +246,7 @@ func (e *CommentParser) Parse(comment string, vcsHost models.VCSHostType) Commen
 	}
 
 	return CommentParseResult{
-		Command: NewCommentCommand(dir, extraArgs, name, verbose, workspace, project),
+		Command: NewCommentCommand(dir, extraArgs, name, verbose, workspace, project, all),
 	}
 }
 

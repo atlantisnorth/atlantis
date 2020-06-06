@@ -644,14 +644,14 @@ func TestNewCommand_CleansDir(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.RepoRelDir, func(t *testing.T) {
-			cmd := events.NewCommentCommand(c.RepoRelDir, nil, models.PlanCommand, false, "workspace", "")
+			cmd := events.NewCommentCommand(c.RepoRelDir, nil, models.PlanCommand, false, "workspace", "", false)
 			Equals(t, c.ExpDir, cmd.RepoRelDir)
 		})
 	}
 }
 
 func TestNewCommand_EmptyDirWorkspaceProject(t *testing.T) {
-	cmd := events.NewCommentCommand("", nil, models.PlanCommand, false, "", "")
+	cmd := events.NewCommentCommand("", nil, models.PlanCommand, false, "", "", false)
 	Equals(t, events.CommentCommand{
 		RepoRelDir:  "",
 		Flags:       nil,
@@ -659,11 +659,12 @@ func TestNewCommand_EmptyDirWorkspaceProject(t *testing.T) {
 		Verbose:     false,
 		Workspace:   "",
 		ProjectName: "",
+		All:         false,
 	}, *cmd)
 }
 
 func TestNewCommand_AllFieldsSet(t *testing.T) {
-	cmd := events.NewCommentCommand("dir", []string{"a", "b"}, models.PlanCommand, true, "workspace", "project")
+	cmd := events.NewCommentCommand("dir", []string{"a", "b"}, models.PlanCommand, true, "workspace", "project", false)
 	Equals(t, events.CommentCommand{
 		Workspace:   "workspace",
 		RepoRelDir:  "dir",
@@ -671,6 +672,7 @@ func TestNewCommand_AllFieldsSet(t *testing.T) {
 		Flags:       []string{"a", "b"},
 		Name:        models.PlanCommand,
 		ProjectName: "project",
+		All:         false,
 	}, *cmd)
 }
 

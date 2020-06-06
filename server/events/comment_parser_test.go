@@ -254,6 +254,7 @@ func TestParse_Multiline(t *testing.T) {
 				Verbose:     false,
 				Workspace:   "",
 				ProjectName: "",
+				All:         false,
 			}, r.Command)
 		})
 	}
@@ -295,6 +296,22 @@ func TestParse_UsingProjectAtSameTimeAsWorkspaceOrDir(t *testing.T) {
 	}
 }
 
+func TestParse_UsingAllAtSameTimeAsProjectOrWorkspaceOrDir(t *testing.T) {
+	cases := []string{
+		"atlantis plan --all -d dir",
+		"atlantis plan --all -p project",
+		"atlantis plan --all -w workspace",
+	}
+	for _, c := range cases {
+		t.Run(c, func(t *testing.T) {
+			r := commentParser.Parse(c, models.Github)
+			exp := "Error: cannot use --all at same time as same time as -p/--project, -d/--dir or -w/--workspace"
+			Assert(t, strings.Contains(r.CommentResponse, exp),
+				"For comment %q expected CommentResponse %q to contain %q", c, r.CommentResponse, exp)
+		})
+	}
+}
+
 func TestParse_Parsing(t *testing.T) {
 	cases := []struct {
 		flags        string
@@ -303,6 +320,7 @@ func TestParse_Parsing(t *testing.T) {
 		expVerbose   bool
 		expExtraArgs string
 		expProject   string
+		expAll       bool
 	}{
 		// Test defaults.
 		{
@@ -312,6 +330,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 		// Test each short flag individually.
 		{
@@ -321,6 +340,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 		{
 			"-d dir",
@@ -329,6 +349,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 		{
 			"-p project",
@@ -337,6 +358,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"project",
+			false,
 		},
 		{
 			"--verbose",
@@ -345,6 +367,7 @@ func TestParse_Parsing(t *testing.T) {
 			true,
 			"",
 			"",
+			false,
 		},
 		// Test each long flag individually.
 		{
@@ -354,6 +377,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 		{
 			"--dir dir",
@@ -362,6 +386,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 		{
 			"--project project",
@@ -370,6 +395,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"project",
+			false,
 		},
 		// Test all of them with different permutations.
 		{
@@ -379,6 +405,7 @@ func TestParse_Parsing(t *testing.T) {
 			true,
 			"",
 			"",
+			false,
 		},
 		{
 			"-d dir -w workspace --verbose",
@@ -387,6 +414,7 @@ func TestParse_Parsing(t *testing.T) {
 			true,
 			"",
 			"",
+			false,
 		},
 		{
 			"--verbose -w workspace -d dir",
@@ -395,6 +423,7 @@ func TestParse_Parsing(t *testing.T) {
 			true,
 			"",
 			"",
+			false,
 		},
 		{
 			"-p project --verbose",
@@ -403,6 +432,7 @@ func TestParse_Parsing(t *testing.T) {
 			true,
 			"",
 			"project",
+			false,
 		},
 		{
 			"--verbose -p project",
@@ -411,6 +441,7 @@ func TestParse_Parsing(t *testing.T) {
 			true,
 			"",
 			"project",
+			false,
 		},
 		// Test that flags after -- are ignored
 		{
@@ -420,6 +451,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"--verbose",
 			"",
+			false,
 		},
 		{
 			"-w workspace -- -d dir --verbose",
@@ -428,6 +460,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"-d dir --verbose",
 			"",
+			false,
 		},
 		// Test the extra args parsing.
 		{
@@ -437,6 +470,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 		{
 			"-w workspace -d dir --verbose -- arg one -two --three &&",
@@ -445,6 +479,7 @@ func TestParse_Parsing(t *testing.T) {
 			true,
 			"arg one -two --three &&",
 			"",
+			false,
 		},
 		// Test whitespace.
 		{
@@ -454,6 +489,7 @@ func TestParse_Parsing(t *testing.T) {
 			true,
 			"arg one -two --three &&",
 			"",
+			false,
 		},
 		{
 			"   -w   workspace   -d   dir   --verbose   --   arg   one   -two   --three   &&",
@@ -462,6 +498,7 @@ func TestParse_Parsing(t *testing.T) {
 			true,
 			"arg one -two --three &&",
 			"",
+			false,
 		},
 		// Test that the dir string is normalized.
 		{
@@ -471,6 +508,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 		{
 			"-d /adir",
@@ -479,6 +517,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 		{
 			"-d .",
@@ -487,6 +526,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 		{
 			"-d ./",
@@ -495,6 +535,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 		{
 			"-d ./adir",
@@ -503,6 +544,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 		{
 			"-d \"dir with space\"",
@@ -511,6 +553,7 @@ func TestParse_Parsing(t *testing.T) {
 			false,
 			"",
 			"",
+			false,
 		},
 	}
 	for _, test := range cases {
@@ -530,6 +573,7 @@ func TestParse_Parsing(t *testing.T) {
 				if cmdName == "apply" {
 					Assert(t, r.Command.Name == models.ApplyCommand, "did not parse comment %q as apply command", comment)
 				}
+				Assert(t, test.expAll == r.Command.All, "exp all to equal %v but was %v for comment %q", test.expAll, r.Command.All, comment)
 			})
 		}
 	}
@@ -675,6 +719,7 @@ func TestParse_VCSUsername(t *testing.T) {
 }
 
 var PlanUsage = `Usage of plan:
+      --all                Run plan on all projects.
   -d, --dir string         Which directory to run plan in relative to root of repo,
                            ex. 'child/dir'.
   -p, --project string     Which project to run plan for. Refers to the name of the

@@ -42,6 +42,8 @@ type WorkingDir interface {
 	// If workspace does not exist on disk, error will be of type os.IsNotExist.
 	GetWorkingDir(r models.Repo, p models.PullRequest, workspace string) (string, error)
 	GetPullDir(r models.Repo, p models.PullRequest) (string, error)
+	// ListAllFiles return all files present in the repo.
+	ListAllFiles(baseRepo models.Repo, p models.PullRequest, workspace string) ([]string, error)
 	// Delete deletes the workspace for this repo and pull.
 	Delete(r models.Repo, p models.PullRequest) error
 	DeleteForWorkspace(r models.Repo, p models.PullRequest, workspace string) error
@@ -257,6 +259,17 @@ func (w *FileWorkspace) GetPullDir(r models.Repo, p models.PullRequest) (string,
 		return "", err
 	}
 	return dir, nil
+}
+
+// ListAllFiles return all files present in the repo.
+func (w *FileWorkspace) ListAllFiles(baseRepo models.Repo, p models.PullRequest, workspace string) ([]string, error) {
+	lsCmd := exec.Command("git", "ls-tree", "-r", "--name-only", p.HeadCommit)
+	lsCmd.Dir = w.cloneDir(baseRepo, p, workspace)
+	lsOut, err := lsCmd.CombinedOutput()
+	if err != nil {
+		return nil, errors.Wrapf(err, "running git ls-tree -r --name-only %q: %s", string(lsOut), p.HeadCommit)
+	}
+	return strings.Split(string(lsOut), "\n"), nil
 }
 
 // Delete deletes the workspace for this repo and pull.
