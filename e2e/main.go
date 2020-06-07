@@ -21,7 +21,7 @@ import (
 
 	"fmt"
 
-	"github.com/google/go-github/v28/github"
+	"github.com/google/go-github/v31/github"
 	multierror "github.com/hashicorp/go-multierror"
 )
 

@@ -23,12 +23,13 @@ import (
 	"github.com/runatlantis/atlantis/server/events/locking/mocks"
 	"github.com/runatlantis/atlantis/server/events/models"
 	"github.com/runatlantis/atlantis/server/events/vcs"
+	"github.com/runatlantis/atlantis/server/events/vcs/github"
 	"github.com/runatlantis/atlantis/server/logging"
 	. "github.com/runatlantis/atlantis/testing"
 )
 
 func TestDefaultProjectLocker_TryLockWhenLocked(t *testing.T) {
-	var githubClient *vcs.GithubClient
+	var githubClient *github.Client
 	mockClient := vcs.NewClientProxy(githubClient, nil, nil, nil, nil)
 	mockLocker := mocks.NewMockLocker()
 	locker := events.DefaultProjectLocker{
@@ -64,7 +65,7 @@ func TestDefaultProjectLocker_TryLockWhenLocked(t *testing.T) {
 
 func TestDefaultProjectLocker_TryLockWhenLockedSamePull(t *testing.T) {
 	RegisterMockTestingT(t)
-	var githubClient *vcs.GithubClient
+	var githubClient *github.Client
 	mockClient := vcs.NewClientProxy(githubClient, nil, nil, nil, nil)
 	mockLocker := mocks.NewMockLocker()
 	locker := events.DefaultProjectLocker{
@@ -103,7 +104,7 @@ func TestDefaultProjectLocker_TryLockWhenLockedSamePull(t *testing.T) {
 
 func TestDefaultProjectLocker_TryLockUnlocked(t *testing.T) {
 	RegisterMockTestingT(t)
-	var githubClient *vcs.GithubClient
+	var githubClient *github.Client
 	mockClient := vcs.NewClientProxy(githubClient, nil, nil, nil, nil)
 	mockLocker := mocks.NewMockLocker()
 	locker := events.DefaultProjectLocker{

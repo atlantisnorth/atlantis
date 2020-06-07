@@ -43,8 +43,11 @@ import (
 	"github.com/runatlantis/atlantis/server/events/runtime"
 	"github.com/runatlantis/atlantis/server/events/terraform"
 	"github.com/runatlantis/atlantis/server/events/vcs"
+	"github.com/runatlantis/atlantis/server/events/vcs/azuredevops"
 	"github.com/runatlantis/atlantis/server/events/vcs/bitbucketcloud"
 	"github.com/runatlantis/atlantis/server/events/vcs/bitbucketserver"
+	"github.com/runatlantis/atlantis/server/events/vcs/github"
+	"github.com/runatlantis/atlantis/server/events/vcs/gitlab"
 	"github.com/runatlantis/atlantis/server/events/webhooks"
 	"github.com/runatlantis/atlantis/server/events/yaml"
 	"github.com/runatlantis/atlantis/server/logging"
@@ -114,15 +117,15 @@ type WebhookConfig struct {
 func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	logger := logging.NewSimpleLogger("server", false, userConfig.ToLogLevel())
 	var supportedVCSHosts []models.VCSHostType
-	var githubClient *vcs.GithubClient
-	var gitlabClient *vcs.GitlabClient
+	var githubClient *github.Client
+	var gitlabClient *gitlab.Client
 	var bitbucketCloudClient *bitbucketcloud.Client
 	var bitbucketServerClient *bitbucketserver.Client
-	var azuredevopsClient *vcs.AzureDevopsClient
+	var azuredevopsClient *azuredevops.Client
 	if userConfig.GithubUser != "" {
 		supportedVCSHosts = append(supportedVCSHosts, models.Github)
 		var err error
-		githubClient, err = vcs.NewGithubClient(userConfig.GithubHostname, userConfig.GithubUser, userConfig.GithubToken, logger)
+		githubClient, err = github.NewClient(userConfig.GithubHostname, userConfig.GithubUser, userConfig.GithubToken, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -130,7 +133,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	if userConfig.GitlabUser != "" {
 		supportedVCSHosts = append(supportedVCSHosts, models.Gitlab)
 		var err error
-		gitlabClient, err = vcs.NewGitlabClient(userConfig.GitlabHostname, userConfig.GitlabToken, logger)
+		gitlabClient, err = gitlab.NewClient(userConfig.GitlabHostname, userConfig.GitlabToken, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -160,7 +163,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	if userConfig.AzureDevopsUser != "" {
 		supportedVCSHosts = append(supportedVCSHosts, models.AzureDevops)
 		var err error
-		azuredevopsClient, err = vcs.NewAzureDevopsClient("dev.azure.com", userConfig.AzureDevopsToken)
+		azuredevopsClient, err = azuredevops.NewClient("dev.azure.com", userConfig.AzureDevopsToken)
 		if err != nil {
 			return nil, err
 		}
@@ -396,8 +399,8 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		CommentParser:                   commentParser,
 		Logger:                          logger,
 		GithubWebhookSecret:             []byte(userConfig.GithubWebhookSecret),
-		GithubRequestValidator:          &DefaultGithubRequestValidator{},
-		GitlabRequestParserValidator:    &DefaultGitlabRequestParserValidator{},
+		RequestValidator:                &github.DefaultRequestValidator{},
+		GitlabRequestParserValidator:    &gitlab.DefaultRequestParserValidator{},
 		GitlabWebhookSecret:             []byte(userConfig.GitlabWebhookSecret),
 		RepoWhitelistChecker:            repoWhitelist,
 		SilenceWhitelistErrors:          userConfig.SilenceWhitelistErrors,
@@ -406,7 +409,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		BitbucketWebhookSecret:          []byte(userConfig.BitbucketWebhookSecret),
 		AzureDevopsWebhookBasicUser:     []byte(userConfig.AzureDevopsWebhookUser),
 		AzureDevopsWebhookBasicPassword: []byte(userConfig.AzureDevopsWebhookPassword),
-		AzureDevopsRequestValidator:     &DefaultAzureDevopsRequestValidator{},
+		AzureDevopsRequestValidator:     &azuredevops.DefaultAzureDevopsRequestValidator{},
 	}
 	return &Server{
 		AtlantisVersion:    config.AtlantisVersion,

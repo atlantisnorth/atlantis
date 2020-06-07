@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v28/github"
+	"github.com/google/go-github/v31/github"
 	"github.com/hashicorp/go-getter"
 	"github.com/hashicorp/go-version"
 	. "github.com/petergtz/pegomock"
@@ -26,6 +26,8 @@ import (
 	"github.com/runatlantis/atlantis/server/events/models"
 	"github.com/runatlantis/atlantis/server/events/runtime"
 	"github.com/runatlantis/atlantis/server/events/terraform"
+	vcsgithub "github.com/runatlantis/atlantis/server/events/vcs/github"
+	vcsgitlab "github.com/runatlantis/atlantis/server/events/vcs/gitlab"
 	vcsmocks "github.com/runatlantis/atlantis/server/events/vcs/mocks"
 	"github.com/runatlantis/atlantis/server/events/webhooks"
 	"github.com/runatlantis/atlantis/server/events/yaml"
@@ -508,8 +510,8 @@ func setupE2E(t *testing.T, repoDir string) (server.EventsController, *vcsmocks.
 		Parser:                       eventParser,
 		CommentParser:                commentParser,
 		GithubWebhookSecret:          nil,
-		GithubRequestValidator:       &server.DefaultGithubRequestValidator{},
-		GitlabRequestParserValidator: &server.DefaultGitlabRequestParserValidator{},
+		RequestValidator:             &vcsgithub.DefaultRequestValidator{},
+		GitlabRequestParserValidator: &vcsgitlab.DefaultRequestParserValidator{},
 		GitlabWebhookSecret:          nil,
 		RepoWhitelistChecker:         repoWhitelistChecker,
 		SupportedVCSHosts:            []models.VCSHostType{models.Gitlab, models.Github, models.BitbucketCloud},

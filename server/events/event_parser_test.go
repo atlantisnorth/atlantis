@@ -21,12 +21,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-github/v28/github"
+	"github.com/google/go-github/v31/github"
 	"github.com/mcdafydd/go-azuredevops/azuredevops"
 	"github.com/mohae/deepcopy"
 	"github.com/runatlantis/atlantis/server/events"
 	"github.com/runatlantis/atlantis/server/events/models"
-	. "github.com/runatlantis/atlantis/server/events/vcs/fixtures"
+	. "github.com/runatlantis/atlantis/server/events/vcs/azuredevops/fixtures"
+	. "github.com/runatlantis/atlantis/server/events/vcs/github/fixtures"
 	. "github.com/runatlantis/atlantis/testing"
 	gitlab "github.com/xanzy/go-gitlab"
 )

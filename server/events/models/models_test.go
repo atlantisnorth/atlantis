@@ -19,7 +19,7 @@ import (
 	"testing"
 
 	"github.com/runatlantis/atlantis/server/events/models"
-	"github.com/runatlantis/atlantis/server/events/vcs"
+	"github.com/runatlantis/atlantis/server/events/vcs/azuredevops"
 	. "github.com/runatlantis/atlantis/testing"
 )
 
@@ -335,7 +335,7 @@ func TestAzureDevopsSplitRepoFullName(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.input, func(t *testing.T) {
-			owner, project, repo := vcs.SplitAzureDevopsRepoFullName(c.input)
+			owner, project, repo := azuredevops.SplitAzureDevopsRepoFullName(c.input)
 			Equals(t, c.expOwner, owner)
 			Equals(t, c.expProject, project)
 			Equals(t, c.expRepo, repo)

@@ -30,6 +30,8 @@ import (
 	emocks "github.com/runatlantis/atlantis/server/events/mocks"
 	"github.com/runatlantis/atlantis/server/events/mocks/matchers"
 	"github.com/runatlantis/atlantis/server/events/models"
+	"github.com/runatlantis/atlantis/server/events/vcs/github"
+	vcsgitlab "github.com/runatlantis/atlantis/server/events/vcs/gitlab"
 	vcsmocks "github.com/runatlantis/atlantis/server/events/vcs/mocks"
 	"github.com/runatlantis/atlantis/server/logging"
 	"github.com/runatlantis/atlantis/server/mocks"
@@ -189,7 +191,7 @@ func TestPost_GitlabCommentNotWhitelisted(t *testing.T) {
 	e := server.EventsController{
 		Logger:                       logging.NewNoopLogger(),
 		CommentParser:                &events.CommentParser{},
-		GitlabRequestParserValidator: &server.DefaultGitlabRequestParserValidator{},
+		GitlabRequestParserValidator: &vcsgitlab.DefaultRequestParserValidator{},
 		Parser:                       &events.EventParser{},
 		SupportedVCSHosts:            []models.VCSHostType{models.Gitlab},
 		RepoWhitelistChecker:         &events.RepoWhitelistChecker{},
@@ -217,7 +219,7 @@ func TestPost_GitlabCommentNotWhitelistedWithSilenceErrors(t *testing.T) {
 	e := server.EventsController{
 		Logger:                       logging.NewNoopLogger(),
 		CommentParser:                &events.CommentParser{},
-		GitlabRequestParserValidator: &server.DefaultGitlabRequestParserValidator{},
+		GitlabRequestParserValidator: &vcsgitlab.DefaultRequestParserValidator{},
 		Parser:                       &events.EventParser{},
 		SupportedVCSHosts:            []models.VCSHostType{models.Gitlab},
 		RepoWhitelistChecker:         &events.RepoWhitelistChecker{},
@@ -244,13 +246,13 @@ func TestPost_GithubCommentNotWhitelisted(t *testing.T) {
 	RegisterMockTestingT(t)
 	vcsClient := vcsmocks.NewMockClient()
 	e := server.EventsController{
-		Logger:                 logging.NewNoopLogger(),
-		GithubRequestValidator: &server.DefaultGithubRequestValidator{},
-		CommentParser:          &events.CommentParser{},
-		Parser:                 &events.EventParser{},
-		SupportedVCSHosts:      []models.VCSHostType{models.Github},
-		RepoWhitelistChecker:   &events.RepoWhitelistChecker{},
-		VCSClient:              vcsClient,
+		Logger:               logging.NewNoopLogger(),
+		RequestValidator:     &github.DefaultRequestValidator{},
+		CommentParser:        &events.CommentParser{},
+		Parser:               &events.EventParser{},
+		SupportedVCSHosts:    []models.VCSHostType{models.Github},
+		RepoWhitelistChecker: &events.RepoWhitelistChecker{},
+		VCSClient:            vcsClient,
 	}
 	requestJSON, err := ioutil.ReadFile(filepath.Join("testfixtures", "githubIssueCommentEvent_notWhitelisted.json"))
 	Ok(t, err)
@@ -274,7 +276,7 @@ func TestPost_GithubCommentNotWhitelistedWithSilenceErrors(t *testing.T) {
 	vcsClient := vcsmocks.NewMockClient()
 	e := server.EventsController{
 		Logger:                 logging.NewNoopLogger(),
-		GithubRequestValidator: &server.DefaultGithubRequestValidator{},
+		RequestValidator:       &github.DefaultRequestValidator{},
 		CommentParser:          &events.CommentParser{},
 		Parser:                 &events.EventParser{},
 		SupportedVCSHosts:      []models.VCSHostType{models.Github},
@@ -736,9 +738,9 @@ func TestPost_PullOpenedOrUpdated(t *testing.T) {
 	}
 }
 
-func setup(t *testing.T) (server.EventsController, *mocks.MockGithubRequestValidator, *mocks.MockGitlabRequestParserValidator, *emocks.MockEventParsing, *emocks.MockCommandRunner, *emocks.MockPullCleaner, *vcsmocks.MockClient, *emocks.MockCommentParsing) {
+func setup(t *testing.T) (server.EventsController, *mocks.MockRequestValidator, *mocks.MockGitlabRequestParserValidator, *emocks.MockEventParsing, *emocks.MockCommandRunner, *emocks.MockPullCleaner, *vcsmocks.MockClient, *emocks.MockCommentParsing) {
 	RegisterMockTestingT(t)
-	v := mocks.NewMockGithubRequestValidator()
+	v := mocks.NewMockRequestValidator()
 	gl := mocks.NewMockGitlabRequestParserValidator()
 	p := emocks.NewMockEventParsing()
 	cp := emocks.NewMockCommentParsing()
@@ -750,7 +752,7 @@ func setup(t *testing.T) (server.EventsController, *mocks.MockGithubRequestValid
 	e := server.EventsController{
 		TestingMode:                  true,
 		Logger:                       logging.NewNoopLogger(),
-		GithubRequestValidator:       v,
+		RequestValidator:             v,
 		Parser:                       p,
 		CommentParser:                cp,
 		CommandRunner:                cr,
