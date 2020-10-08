@@ -7,7 +7,7 @@ jobs:
         GOFLAGS: "-mod=vendor"
     steps:
     - checkout
-    - run: make test-coverage
+    - run: make Test-Coverage
     - run:
         name: post coverage to codecov.io
         command: bash <(curl -s https://codecov.io/bash)
