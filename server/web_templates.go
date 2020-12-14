@@ -230,6 +230,83 @@ v{{ .AtlantisVersion }}
 </html>
 `))
 
+// JobData holds the fields needed to display the job view.
+type JobData struct {
+	AtlantisVersion string
+	PullSlug        string
+	// CleanedBasePath is the path Atlantis is accessible at externally. If
+	// not using a path-based proxy, this will be an empty string. Never ends
+	// in a '/' (hence "cleaned").
+	CleanedBasePath string
+}
+
+var jobTemplate = template.Must(template.New("job.html.tmpl").Parse(`
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>atlantis</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ .CleanedBasePath }}/static/css/normalize.css">
+    <link rel="stylesheet" href="{{ .CleanedBasePath }}/static/css/skeleton.css">
+    <link rel="stylesheet" href="{{ .CleanedBasePath }}/static/css/custom.css">
+    <link
+       rel="stylesheet"
+       href="https://cdnjs.cloudflare.com/ajax/libs/xterm/3.14.5/xterm.min.css"
+       integrity="sha256-uTIrmf95e6IHlacC0wpDaPS58eWF314UC7OgdrD6AdU="
+       crossorigin="anonymous"
+    />
+    <link rel="icon" type="image/png" href="{{ .CleanedBasePath }}/static/images/atlantis-icon.png">
+    <style>
+      #terminal {
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <section class="header">
+      <a title="atlantis" href="{{ .CleanedBasePath }}/"><img class="hero" src="{{ .CleanedBasePath }}/static/images/atlantis-icon_512.png"/></a>
+      <p class="title-heading">atlantis</p>
+      <p class="title-heading"><strong>{{ .PullSlug }}</strong></p>
+      </section>
+      <div class="navbar-spacer"></div>
+      <br>
+      <section>
+        <div id="terminal"></div>
+      </section>
+    </div>
+    <footer>
+      v{{ .AtlantisVersion }}
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/xterm@4.9.0/lib/xterm.js"></script>
+    <script src="https://unpkg.com/xterm-addon-attach@0.6.0/lib/xterm-addon-attach.js"></script>
+    <script src="https://unpkg.com/xterm-addon-fit@0.4.0/lib/xterm-addon-fit.js"></script>
+    <script>
+      "use strict";
+      const term = new Terminal();
+      const socket = new WebSocket(
+       (document.location.protocol === "http:" ? "ws://" : "wss://") +
+         document.location.host +
+         document.location.pathname +
+         "/ws"
+      );
+      const attachAddon = new AttachAddon.AttachAddon(socket);
+      const fitAddon = new FitAddon.FitAddon();
+      term.loadAddon(attachAddon);
+      term.loadAddon(fitAddon);
+      term.open(document.getElementById("terminal"));
+      fitAddon.fit();
+      window.addEventListener("resize", () => fitAddon.fit());
+    </script>
+  </body>
+</html>
+`))
+
 // GithubSetupData holds the data for rendering the github app setup page
 type GithubSetupData struct {
 	Target        string

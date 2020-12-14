@@ -28,10 +28,10 @@ import (
 type CommitStatusUpdater interface {
 	// UpdateCombined updates the combined status of the head commit of pull.
 	// A combined status represents all the projects modified in the pull.
-	UpdateCombined(repo models.Repo, pull models.PullRequest, status models.CommitStatus, command models.CommandName) error
+	UpdateCombined(repo models.Repo, pull models.PullRequest, status models.CommitStatus, command models.CommandName, url string) error
 	// UpdateCombinedCount updates the combined status to reflect the
 	// numSuccess out of numTotal.
-	UpdateCombinedCount(repo models.Repo, pull models.PullRequest, status models.CommitStatus, command models.CommandName, numSuccess int, numTotal int) error
+	UpdateCombinedCount(repo models.Repo, pull models.PullRequest, status models.CommitStatus, command models.CommandName, numSuccess int, numTotal int, url string) error
 	// UpdateProject sets the commit status for the project represented by
 	// ctx.
 	UpdateProject(ctx models.ProjectCommandContext, cmdName models.CommandName, status models.CommitStatus, url string) error
@@ -44,7 +44,7 @@ type DefaultCommitStatusUpdater struct {
 	StatusName string
 }
 
-func (d *DefaultCommitStatusUpdater) UpdateCombined(repo models.Repo, pull models.PullRequest, status models.CommitStatus, command models.CommandName) error {
+func (d *DefaultCommitStatusUpdater) UpdateCombined(repo models.Repo, pull models.PullRequest, status models.CommitStatus, command models.CommandName, url string) error {
 	src := fmt.Sprintf("%s/%s", d.StatusName, command.String())
 	var descripWords string
 	switch status {
@@ -56,16 +56,16 @@ func (d *DefaultCommitStatusUpdater) UpdateCombined(repo models.Repo, pull model
 		descripWords = "succeeded."
 	}
 	descrip := fmt.Sprintf("%s %s", strings.Title(command.String()), descripWords)
-	return d.Client.UpdateStatus(repo, pull, status, src, descrip, "")
+	return d.Client.UpdateStatus(repo, pull, status, src, descrip, url)
 }
 
-func (d *DefaultCommitStatusUpdater) UpdateCombinedCount(repo models.Repo, pull models.PullRequest, status models.CommitStatus, command models.CommandName, numSuccess int, numTotal int) error {
+func (d *DefaultCommitStatusUpdater) UpdateCombinedCount(repo models.Repo, pull models.PullRequest, status models.CommitStatus, command models.CommandName, numSuccess int, numTotal int, url string) error {
 	src := fmt.Sprintf("%s/%s", d.StatusName, command.String())
 	cmdVerb := "planned"
 	if command == models.ApplyCommand {
 		cmdVerb = "applied"
 	}
-	return d.Client.UpdateStatus(repo, pull, status, src, fmt.Sprintf("%d/%d projects %s successfully.", numSuccess, numTotal, cmdVerb), "")
+	return d.Client.UpdateStatus(repo, pull, status, src, fmt.Sprintf("%d/%d projects %s successfully.", numSuccess, numTotal, cmdVerb), url)
 }
 
 func (d *DefaultCommitStatusUpdater) UpdateProject(ctx models.ProjectCommandContext, cmdName models.CommandName, status models.CommitStatus, url string) error {

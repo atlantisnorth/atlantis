@@ -105,12 +105,14 @@ type DefaultCommandRunner struct {
 	ProjectCommandRunner    ProjectCommandRunner
 	// GlobalAutomerge is true if we should automatically merge pull requests if all
 	// plans have been successfully applied. This is set via a CLI flag.
-	GlobalAutomerge   bool
-	PendingPlanFinder PendingPlanFinder
-	WorkingDir        WorkingDir
-	DB                *db.BoltDB
-	Drainer           *Drainer
-	DeleteLockCommand DeleteLockCommand
+	GlobalAutomerge     bool
+	PendingPlanFinder   PendingPlanFinder
+	WorkingDir          WorkingDir
+	DB                  *db.BoltDB
+	Drainer             *Drainer
+	DeleteLockCommand   DeleteLockCommand
+	TerraformOutputChan chan<- *models.TerraformOutputLine
+	JobURLGenerator     JobURLGenerator
 }
 
 // RunAutoplanCommand runs plan when a pull request is opened or updated.
@@ -140,7 +142,7 @@ func (c *DefaultCommandRunner) RunAutoplanCommand(baseRepo models.Repo, headRepo
 
 	projectCmds, err := c.ProjectCommandBuilder.BuildAutoplanCommands(ctx)
 	if err != nil {
-		if statusErr := c.CommitStatusUpdater.UpdateCombined(ctx.Pull.BaseRepo, ctx.Pull, models.FailedCommitStatus, models.PlanCommand); statusErr != nil {
+		if statusErr := c.CommitStatusUpdater.UpdateCombined(ctx.Pull.BaseRepo, ctx.Pull, models.FailedCommitStatus, models.PlanCommand, ""); statusErr != nil {
 			ctx.Log.Warn("unable to update commit status: %s", statusErr)
 		}
 
@@ -154,7 +156,7 @@ func (c *DefaultCommandRunner) RunAutoplanCommand(baseRepo models.Repo, headRepo
 			// with 0/0 projects planned successfully because some users require
 			// the Atlantis status to be passing for all pull requests.
 			ctx.Log.Debug("setting VCS status to success with no projects found")
-			if err := c.CommitStatusUpdater.UpdateCombinedCount(baseRepo, pull, models.SuccessCommitStatus, models.PlanCommand, 0, 0); err != nil {
+			if err := c.CommitStatusUpdater.UpdateCombinedCount(baseRepo, pull, models.SuccessCommitStatus, models.PlanCommand, 0, 0, ""); err != nil {
 				ctx.Log.Warn("unable to update commit status: %s", err)
 			}
 		}
@@ -162,7 +164,7 @@ func (c *DefaultCommandRunner) RunAutoplanCommand(baseRepo models.Repo, headRepo
 	}
 
 	// At this point we are sure Atlantis has work to do, so set commit status to pending
-	if err := c.CommitStatusUpdater.UpdateCombined(ctx.Pull.BaseRepo, ctx.Pull, models.PendingCommitStatus, models.PlanCommand); err != nil {
+	if err := c.CommitStatusUpdater.UpdateCombined(ctx.Pull.BaseRepo, ctx.Pull, models.PendingCommitStatus, models.PlanCommand, c.JobURLGenerator.GenerateJobURL(ctx.Pull)); err != nil {
 		ctx.Log.Warn("unable to update commit status: %s", err)
 	}
 
@@ -291,7 +293,7 @@ func (c *DefaultCommandRunner) RunCommentCommand(baseRepo models.Repo, maybeHead
 		ctx.Log.Info("pull request mergeable status: %t", ctx.PullMergeable)
 	}
 
-	if err = c.CommitStatusUpdater.UpdateCombined(baseRepo, pull, models.PendingCommitStatus, cmd.CommandName()); err != nil {
+	if err = c.CommitStatusUpdater.UpdateCombined(baseRepo, pull, models.PendingCommitStatus, cmd.CommandName(), c.JobURLGenerator.GenerateJobURL(ctx.Pull)); err != nil {
 		ctx.Log.Warn("unable to update commit status: %s", err)
 	}
 
@@ -306,7 +308,7 @@ func (c *DefaultCommandRunner) RunCommentCommand(baseRepo models.Repo, maybeHead
 		return
 	}
 	if err != nil {
-		if statusErr := c.CommitStatusUpdater.UpdateCombined(ctx.Pull.BaseRepo, ctx.Pull, models.FailedCommitStatus, cmd.CommandName()); statusErr != nil {
+		if statusErr := c.CommitStatusUpdater.UpdateCombined(ctx.Pull.BaseRepo, ctx.Pull, models.FailedCommitStatus, cmd.CommandName(), c.JobURLGenerator.GenerateJobURL(ctx.Pull)); statusErr != nil {
 			ctx.Log.Warn("unable to update commit status: %s", statusErr)
 		}
 		c.updatePull(ctx, cmd, CommandResult{Error: err})
@@ -376,7 +378,11 @@ func (c *DefaultCommandRunner) updateCommitStatus(ctx *CommandContext, cmd model
 		}
 	}
 
-	if err := c.CommitStatusUpdater.UpdateCombinedCount(ctx.Pull.BaseRepo, ctx.Pull, status, cmd, numSuccess, len(pullStatus.Projects)); err != nil {
+	url := ""
+	if status == models.PendingCommitStatus {
+		url = c.JobURLGenerator.GenerateJobURL(ctx.Pull)
+	}
+	if err := c.CommitStatusUpdater.UpdateCombinedCount(ctx.Pull.BaseRepo, ctx.Pull, status, cmd, numSuccess, len(pullStatus.Projects), url); err != nil {
 		ctx.Log.Warn("unable to update commit status: %s", err)
 	}
 }
@@ -447,7 +453,21 @@ func (c *DefaultCommandRunner) runProjectCmdsParallel(cmds []models.ProjectComma
 
 func (c *DefaultCommandRunner) runProjectCmds(cmds []models.ProjectCommandContext, cmdName models.CommandName) CommandResult {
 	var results []models.ProjectResult
-	for _, pCmd := range cmds {
+	for idx, pCmd := range cmds {
+		if idx == 0 {
+			c.TerraformOutputChan <- &models.TerraformOutputLine{
+				PullSlug:    pCmd.PullSlug(),
+				ClearBefore: true,
+				Line:        fmt.Sprintf(":: Start processing pull request %s", pCmd.PullSlug()),
+			}
+		}
+		c.TerraformOutputChan <- &models.TerraformOutputLine{
+			PullSlug: pCmd.PullSlug(),
+			Line: fmt.Sprintf(
+				":::: [%d/%d] Start processing project %s",
+				idx+1, len(cmds), pCmd.ProjectDesc(),
+			),
+		}
 		var res models.ProjectResult
 		switch cmdName {
 		case models.PlanCommand:
@@ -456,6 +476,20 @@ func (c *DefaultCommandRunner) runProjectCmds(cmds []models.ProjectCommandContex
 			res = c.ProjectCommandRunner.Apply(pCmd)
 		}
 		results = append(results, res)
+		c.TerraformOutputChan <- &models.TerraformOutputLine{
+			PullSlug: pCmd.PullSlug(),
+			Line: fmt.Sprintf(
+				":::: [%d/%d] Finish processing project %s",
+				idx+1, len(cmds), pCmd.ProjectDesc(),
+			),
+		}
+		if idx == len(cmds)-1 {
+			c.TerraformOutputChan <- &models.TerraformOutputLine{
+				PullSlug:   pCmd.PullSlug(),
+				Line:       fmt.Sprintf(":: Finish processing pull request %s", pCmd.PullSlug()),
+				ClearAfter: true,
+			}
+		}
 	}
 	return CommandResult{ProjectResults: results}
 }
