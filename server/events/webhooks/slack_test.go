@@ -24,7 +24,7 @@ import (
 	. "github.com/runatlantis/atlantis/testing"
 )
 
-func TestSend_PostMessage(t *testing.T) {
+func TestSend_SlackMessage(t *testing.T) {
 	t.Log("Sending a hook with a matching regex should call PostMessage")
 	RegisterMockTestingT(t)
 	client := mocks.NewMockSlackClient()
@@ -46,7 +46,7 @@ func TestSend_PostMessage(t *testing.T) {
 	client.VerifyWasCalledOnce().PostMessage(channel, result)
 }
 
-func TestSend_NoopSuccess(t *testing.T) {
+func TestSend_SlackNoopSuccess(t *testing.T) {
 	t.Log("Sending a hook with a non-matching regex should succeed")
 	RegisterMockTestingT(t)
 	client := mocks.NewMockSlackClient()
