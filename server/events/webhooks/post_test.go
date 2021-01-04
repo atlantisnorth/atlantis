@@ -33,7 +33,7 @@ func TestSend_PostMessage(t *testing.T) {
 			var bodyBytes []byte
 			bodyBytes, _ = ioutil.ReadAll(req.Body)
 			var result webhooks.ApplyResult
-			err := json.Unmarshal([]byte(bodyBytes), &result)
+			err := json.Unmarshal(bodyBytes, &result)
 			Ok(t, err)
 
 			Assert(t, result.Workspace == "production", "wrong data")
@@ -42,7 +42,7 @@ func TestSend_PostMessage(t *testing.T) {
 
 	hook := webhooks.PostWebhook{
 		Client: server.Client(),
-		Url:    server.URL,
+		URL:    server.URL,
 	}
 	result := webhooks.ApplyResult{
 		Workspace: "production",

@@ -124,7 +124,7 @@ type WebhookConfig struct {
 	Channel string `mapstructure:"channel"`
 	// Url is the webhook url to send a POST request to. It only applies to
 	// post webhooks.
-	Url string `mapstructure:"url"`
+	URL string `mapstructure:"url"`
 }
 
 // NewServer returns a new server. If there are issues starting the server or
@@ -254,7 +254,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			Event:          c.Event,
 			Kind:           c.Kind,
 			WorkspaceRegex: c.WorkspaceRegex,
-			Url:            c.Url,
+			URL:            c.URL,
 		}
 		webhooksConfig = append(webhooksConfig, config)
 	}

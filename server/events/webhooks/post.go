@@ -19,18 +19,18 @@ import (
 	"github.com/runatlantis/atlantis/server/logging"
 )
 
-type HttpClient interface {
+type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
 // Sends POST requests webhooks to url.
 type PostWebhook struct {
-	Url    string
-	Client HttpClient
+	URL    string
+	Client HTTPClient
 }
 
 func NewPost(url string) *PostWebhook {
-	return &PostWebhook{Url: url, Client: &http.Client{}}
+	return &PostWebhook{URL: url, Client: &http.Client{}}
 }
 
 // Send sends the webhook to the specified url
@@ -40,10 +40,12 @@ func (p *PostWebhook) Send(log logging.SimpleLogging, applyResult ApplyResult) e
 		return err
 	}
 
-	req, _ := http.NewRequest("POST", p.Url, bytes.NewBuffer(requestJSON))
+	req, _ := http.NewRequest("POST", p.URL, bytes.NewBuffer(requestJSON))
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := p.Client.Do(req)
 
-	defer resp.Body.Close()
+	if err == nil {
+		resp.Body.Close()
+	}
 	return err
 }

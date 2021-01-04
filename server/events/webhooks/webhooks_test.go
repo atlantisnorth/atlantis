@@ -30,7 +30,7 @@ const (
 	validKindSlack = webhooks.SlackKind
 	validKindPost  = webhooks.PostKind
 	validChannel   = "validchannel"
-	validUrl       = "https://localhost"
+	validURL       = "https://localhost"
 )
 
 var validConfigSlack = webhooks.Config{
@@ -43,7 +43,7 @@ var validConfigSlack = webhooks.Config{
 var validConfigPost = webhooks.Config{
 	Event: validEvent,
 	Kind:  validKindPost,
-	Url:   validUrl,
+	URL:   validURL,
 }
 
 func validConfigs() []webhooks.Config {
@@ -103,7 +103,7 @@ func TestNewWebhooksManager_NoKind(t *testing.T) {
 func TestNewWebhooksManager_NoUrl(t *testing.T) {
 	t.Log("When the url key is not specified in a config, an error is returned")
 	confs := validConfigs()[1:]
-	confs[0].Url = ""
+	confs[0].URL = ""
 	_, err := webhooks.NewMultiWebhookSender(confs, nil)
 	Assert(t, err != nil, "expected error")
 	Equals(t, "must specify \"url\" if using a webhook of \"kind: post\"", err.Error())
@@ -157,7 +157,6 @@ func TestNewWebhooksManager_SingleConfigSuccessPost(t *testing.T) {
 	configs := validConfigs()[1:]
 	m, err := webhooks.NewMultiWebhookSender(configs, nil)
 	Ok(t, err)
-	Assert(t, m != nil, "manager shouldn't be nil")
 	Equals(t, 1, len(m.Webhooks)) // nolint: staticcheck
 }
 

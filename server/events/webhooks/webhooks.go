@@ -25,7 +25,7 @@ import (
 
 const (
 	SlackKind string = "slack"
-	PostKind         = "post"
+	PostKind  string = "post"
 )
 const ApplyEvent = "apply"
 
@@ -57,7 +57,7 @@ type Config struct {
 	WorkspaceRegex string
 	Kind           string
 	Channel        string
-	Url            string
+	URL            string
 }
 
 func NewMultiWebhookSender(configs []Config, client SlackClient) (*MultiWebhookSender, error) {
@@ -87,10 +87,10 @@ func NewMultiWebhookSender(configs []Config, client SlackClient) (*MultiWebhookS
 			}
 			webhooks = append(webhooks, slack)
 		case PostKind:
-			if c.Url == "" {
+			if c.URL == "" {
 				return nil, fmt.Errorf("must specify \"url\" if using a webhook of \"kind: %s\"", PostKind)
 			}
-			post := NewPost(c.Url)
+			post := NewPost(c.URL)
 			webhooks = append(webhooks, post)
 		default:
 			return nil, fmt.Errorf("\"kind: %s\" not supported. Only \"%s\" and \"%s\" are supported right now", c.Kind, SlackKind, PostKind)
