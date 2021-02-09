@@ -401,6 +401,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			PendingPlanFinder:  pendingPlanFinder,
 			CommentBuilder:     commentParser,
 			SkipCloneNoChanges: userConfig.SkipCloneNoChanges,
+			ReleasesLister:     events.DefaultReleasesLister{},
 		},
 		ProjectCommandRunner: &events.DefaultProjectCommandRunner{
 			Locker:           projectLocker,

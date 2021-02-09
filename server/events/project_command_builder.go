@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
+	"sort"
 	"strings"
 
+	semver "github.com/hashicorp/go-version"
 	"github.com/runatlantis/atlantis/server/events/yaml/valid"
 
 	"github.com/hashicorp/go-version"
@@ -62,6 +63,7 @@ type DefaultProjectCommandBuilder struct {
 	PendingPlanFinder  *DefaultPendingPlanFinder
 	CommentBuilder     CommentBuilder
 	SkipCloneNoChanges bool
+	ReleasesLister     ReleasesLister
 }
 
 // See ProjectCommandBuilder.BuildAutoplanCommands.
@@ -483,26 +485,50 @@ func (p *DefaultProjectCommandBuilder) getTfVersion(ctx *CommandContext, absProj
 		return nil
 	}
 
-	if len(module.RequiredCore) != 1 {
-		ctx.Log.Info("cannot determine which version to use from terraform configuration, detected %d possibilities.", len(module.RequiredCore))
+	if len(module.RequiredCore) == 0 {
+		ctx.Log.Debug("no version constraints detected from terrafrom configuration.")
 		return nil
 	}
-	requiredVersionSetting := module.RequiredCore[0]
 
-	// We allow `= x.y.z`, `=x.y.z` or `x.y.z` where `x`, `y` and `z` are integers.
-	re := regexp.MustCompile(`^=?\s*([^\s]+)\s*$`)
-	matched := re.FindStringSubmatch(requiredVersionSetting)
-	if len(matched) == 0 {
-		ctx.Log.Debug("did not specify exact version in terraform configuration, found %q", requiredVersionSetting)
-		return nil
-	}
-	ctx.Log.Debug("found required_version setting of %q", requiredVersionSetting)
-	version, err := version.NewVersion(matched[1])
+	// build constraints
+	constraintStrings := strings.Join(module.RequiredCore, ",")
+
+	constraints, err := semver.NewConstraint(constraintStrings)
 	if err != nil {
-		ctx.Log.Debug(err.Error())
+		ctx.Log.Err("trying to build constraints: %s", err)
 		return nil
 	}
 
-	ctx.Log.Info("detected module requires version: %q", version.String())
-	return version
+	// build versions
+	releaseList, err := p.ReleasesLister.ListReleases()
+	if err != nil {
+		ctx.Log.Err("trying to get list of terraform versions: %s", err)
+		return nil
+	}
+
+	versions := make([]*semver.Version, len(releaseList))
+	for i, release := range releaseList {
+		version, err := semver.NewVersion(release)
+		if err != nil {
+			ctx.Log.Err("trying to build version list: %s", err)
+			return nil
+		}
+
+		versions[i] = version
+	}
+
+	// sortVersions
+	sort.Sort(sort.Reverse(semver.Collection(versions)))
+
+	for _, version := range versions {
+		if constraints.Check(version) {
+			ctx.Log.Info("detected module requires version: %q", version)
+			return version
+		}
+
+	}
+
+	ctx.Log.Info("no versions matched constraint: %s", constraints)
+	return nil
+
 }

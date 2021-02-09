@@ -723,11 +723,14 @@ func TestDefaultProjectCommandBuilder_EscapeArgs(t *testing.T) {
 }
 
 // Test that terraform version is used when specified in terraform configuration
-func TestDefaultProjectCommandBuilder_TerraformVersion(t *testing.T) {
+func TestDefaultProjectCommandBuilder_TerraformVersionSpecified(t *testing.T) {
 	// For the following tests:
 	// If terraform configuration is used, result should be `0.12.8`.
 	// If project configuration is used, result should be `0.12.6`.
 	// If default is to be used, result should be `nil`.
+
+	tfReleases := []string{"0.12.9", "0.12.8", "0.12.6"}
+
 	baseVersionConfig := `
 terraform {
   required_version = "%s0.12.8"
@@ -742,11 +745,9 @@ projects:
 `
 
 	exactSymbols := []string{"", "="}
-	nonExactSymbols := []string{">", ">=", "<", "<=", "~="}
 
 	type testCase struct {
 		DirStructure  map[string]interface{}
-		AtlantisYAML  string
 		ModifiedFiles []string
 		Exp           map[string][]int
 	}
@@ -763,20 +764,6 @@ projects:
 			ModifiedFiles: []string{"project1/main.tf"},
 			Exp: map[string][]int{
 				"project1": {0, 12, 8},
-			},
-		}
-	}
-
-	for _, nonExactSymbol := range nonExactSymbols {
-		testCases[fmt.Sprintf("non-exact version in terraform config using \"%s\"", nonExactSymbol)] = testCase{
-			DirStructure: map[string]interface{}{
-				"project1": map[string]interface{}{
-					"main.tf": fmt.Sprintf(baseVersionConfig, nonExactSymbol),
-				},
-			},
-			ModifiedFiles: []string{"project1/main.tf"},
-			Exp: map[string][]int{
-				"project1": nil,
 			},
 		}
 	}
@@ -836,6 +823,376 @@ projects:
 		},
 	}
 
+	testCases["project with invalid terraform config"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = asdflkj;
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": nil,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			RegisterMockTestingT(t)
+
+			tmpDir, cleanup := DirStructure(t, testCase.DirStructure)
+
+			defer cleanup()
+			vcsClient := vcsmocks.NewMockClient()
+			When(vcsClient.GetModifiedFiles(matchers.AnyModelsRepo(), matchers.AnyModelsPullRequest())).ThenReturn(testCase.ModifiedFiles, nil)
+
+			workingDir := mocks.NewMockWorkingDir()
+			When(workingDir.Clone(
+				matchers.AnyPtrToLoggingSimpleLogger(),
+				matchers.AnyModelsRepo(),
+				matchers.AnyModelsPullRequest(),
+				AnyString())).ThenReturn(tmpDir, false, nil)
+
+			When(workingDir.GetWorkingDir(
+				matchers.AnyModelsRepo(),
+				matchers.AnyModelsPullRequest(),
+				AnyString())).ThenReturn(tmpDir, nil)
+
+			rl := mocks.NewMockReleasesLister()
+			When(rl.ListReleases()).ThenReturn(tfReleases, nil)
+
+			builder := &events.DefaultProjectCommandBuilder{
+				WorkingDirLocker:   events.NewDefaultWorkingDirLocker(),
+				WorkingDir:         workingDir,
+				VCSClient:          vcsClient,
+				ParserValidator:    &yaml.ParserValidator{},
+				ProjectFinder:      &events.DefaultProjectFinder{},
+				CommentBuilder:     &events.CommentParser{},
+				GlobalCfg:          valid.NewGlobalCfg(true, false, false),
+				SkipCloneNoChanges: false,
+				ReleasesLister:     rl,
+			}
+
+			actCtxs, err := builder.BuildPlanCommands(
+				&events.CommandContext{},
+				&events.CommentCommand{
+					RepoRelDir: "",
+					Flags:      nil,
+					Name:       models.PlanCommand,
+					Verbose:    false,
+				})
+
+			Ok(t, err)
+			Equals(t, len(testCase.Exp), len(actCtxs))
+			for _, actCtx := range actCtxs {
+				if testCase.Exp[actCtx.RepoRelDir] != nil {
+					Assert(t, actCtx.TerraformVersion != nil, "TerraformVersion is nil.")
+					Equals(t, testCase.Exp[actCtx.RepoRelDir], actCtx.TerraformVersion.Segments())
+				} else {
+					Assert(t, actCtx.TerraformVersion == nil, "TerraformVersion is supposed to be nil, got .", actCtx.TerraformVersion)
+				}
+			}
+		})
+	}
+}
+
+// Test that a correct terraform version is used when a constraint is specified in the terraform configuration
+func TestDefaultProjectCommandBuilder_TerraformVersionConstraints(t *testing.T) {
+
+	tfReleases := []string{"0.14.0-rc1", "0.14.0-beta2", "0.14.0-beta1", "0.14.0-alpha20201007", "0.14.0-alpha20200923", "0.14.0-alpha20200910", "0.13.5", "0.13.4", "0.13.3", "0.13.2", "0.13.1", "0.13.0", "0.13.0-rc1", "0.13.0-beta3", "0.13.0-beta2", "0.13.0-beta1", "0.12.29", "0.12.28", "0.12.27", "0.12.26", "0.12.25", "0.12.24", "0.12.23", "0.12.22", "0.12.21", "0.12.20", "0.12.19", "0.12.18", "0.12.17", "0.12.16", "0.12.15", "0.12.14", "0.12.13", "0.12.12", "0.12.11", "0.12.10", "0.12.9", "0.12.8", "0.12.7", "0.12.6", "0.12.5", "0.12.4", "0.12.3", "0.12.2", "0.12.1", "0.12.0", "0.12.0-rc1", "0.12.0-beta2", "0.12.0-beta1", "0.12.0-alpha4", "0.12.0-alpha3", "0.12.0-alpha2", "0.12.0-alpha1", "0.11.15-oci", "0.11.14", "0.11.13", "0.11.12", "0.11.12-beta1", "0.11.11", "0.11.10", "0.11.9", "0.11.9-beta1", "0.11.8", "0.11.7", "0.11.6", "0.11.5", "0.11.4", "0.11.3", "0.11.2", "0.11.1", "0.11.0", "0.11.0-rc1", "0.11.0-beta1", "0.10.8", "0.10.7", "0.10.6", "0.10.5", "0.10.4", "0.10.3", "0.10.2", "0.10.1", "0.10.0", "0.10.0-rc1", "0.10.0-beta2", "0.10.0-beta1", "0.9.11", "0.9.10", "0.9.9", "0.9.8", "0.9.7", "0.9.6", "0.9.5", "0.9.4", "0.9.3", "0.9.2", "0.9.1", "0.9.0", "0.8.8", "0.8.7", "0.8.6", "0.8.5", "0.8.4", "0.8.3", "0.8.2", "0.8.1", "0.8.0", "0.7.13", "0.7.12", "0.7.11", "0.7.10", "0.7.9", "0.7.8", "0.7.7", "0.7.6", "0.7.5", "0.7.4", "0.7.3", "0.7.2", "0.7.1", "0.7.0", "0.6.16", "0.6.15", "0.6.14", "0.6.13", "0.6.12", "0.6.11", "0.6.10", "0.6.9", "0.6.8", "0.6.7", "0.6.6", "0.6.5", "0.6.4", "0.6.3", "0.6.2", "0.6.1", "0.6.0", "0.5.3", "0.5.1", "0.5.0", "0.4.2", "0.4.1", "0.4.0", "0.3.7", "0.3.6", "0.3.5", "0.3.1", "0.3.0", "0.2.2", "0.2.1", "0.2.0", "0.1.1", "0.1.0"}
+
+	defaultRL := mocks.NewMockReleasesLister()
+	When(defaultRL.ListReleases()).ThenReturn(tfReleases, nil)
+
+	listingFailRL := mocks.NewMockReleasesLister()
+	When(listingFailRL.ListReleases()).ThenReturn(nil, fmt.Errorf("mock error"))
+
+	badListRL := mocks.NewMockReleasesLister()
+	When(badListRL.ListReleases()).ThenReturn([]string{"0.14.0-rc1", "0.14.0-beta2", "0.14.0-beta1", "0.14.0-alpha20201007", "asdf"}, nil)
+
+	type testCase struct {
+		DirStructure  map[string]interface{}
+		ModifiedFiles []string
+		Exp           map[string][]int
+		ReleaseLister *mocks.MockReleasesLister
+	}
+
+	testCases := make(map[string]testCase)
+
+	testCases["version constraint in terraform config using <"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = "<0.13.0"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": {0, 12, 29},
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["unsatisfiable version constraint in terraform config using <"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = "<0.1.0"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": nil,
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["version constraint in terraform config using <="] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = "<=0.14.0"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": {0, 13, 5},
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["match exact version constraint in terraform config using <="] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = "<=0.13.0"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": {0, 13, 0},
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["unsatisfiable version constraint in terraform config using <="] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = "<=0.0.9"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": nil,
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["version constraint in terraform config using >"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = ">0.11.0"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": {0, 13, 5},
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["unsatisfiable version constraint in terraform config using >"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = ">0.13.5"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": nil,
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["version constraint in terraform config using >="] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = ">=0.13.0"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": {0, 13, 5},
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["match exact version constraint in terraform config using >="] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = ">=0.13.5"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": {0, 13, 5},
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["unsatisfiable version constraint in terraform config using >="] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = ">=0.13.6"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": nil,
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["pessimistic version constraint in terraform config for patches"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = "~>0.12.5"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": {0, 12, 29},
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["pessimistic version constraint in terraform config for minors"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = "~>0.12"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": {0, 13, 5},
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["invalid constraint"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = "><0.13"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": nil,
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["multiple constraints"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = ">0.12, <0.13"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": {0, 12, 29},
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["unsatisfiable multiple constraints"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = "<0.12, >0.13"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": nil,
+		},
+		ReleaseLister: defaultRL,
+	}
+
+	testCases["fail to list releases"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = "<0.12, >0.13"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": nil,
+		},
+		ReleaseLister: listingFailRL,
+	}
+
+	testCases["invalid list of releases"] = testCase{
+		DirStructure: map[string]interface{}{
+			"project1": map[string]interface{}{
+				"main.tf": `
+				terraform {
+				  required_version = "<0.12, >0.13"
+				}`,
+			},
+		},
+		ModifiedFiles: []string{"project1/main.tf"},
+		Exp: map[string][]int{
+			"project1": nil,
+		},
+		ReleaseLister: badListRL,
+	}
+
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			RegisterMockTestingT(t)
@@ -867,6 +1224,7 @@ projects:
 				CommentBuilder:     &events.CommentParser{},
 				GlobalCfg:          valid.NewGlobalCfg(true, false, false),
 				SkipCloneNoChanges: false,
+				ReleasesLister:     testCase.ReleaseLister,
 			}
 
 			actCtxs, err := builder.BuildPlanCommands(
@@ -885,7 +1243,7 @@ projects:
 					Assert(t, actCtx.TerraformVersion != nil, "TerraformVersion is nil.")
 					Equals(t, testCase.Exp[actCtx.RepoRelDir], actCtx.TerraformVersion.Segments())
 				} else {
-					Assert(t, actCtx.TerraformVersion == nil, "TerraformVersion is supposed to be nil.")
+					Assert(t, actCtx.TerraformVersion == nil, "TerraformVersion is supposed to be nil, got %s.", actCtx.TerraformVersion)
 				}
 			}
 		})

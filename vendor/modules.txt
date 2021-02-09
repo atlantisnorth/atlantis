@@ -202,6 +202,10 @@ github.com/konsorten/go-windows-terminal-sequences
 # github.com/leodido/go-urn v1.2.0
 ## explicit
 github.com/leodido/go-urn
+# github.com/lusis/go-slackbot v0.0.0-20180109053408-401027ccfef5
+## explicit
+# github.com/lusis/slack-test v0.0.0-20190426140909-c40012f20018
+## explicit
 # github.com/magiconair/properties v1.8.1
 github.com/magiconair/properties
 # github.com/mattn/go-colorable v0.0.9
@@ -219,7 +223,7 @@ github.com/microcosm-cc/bluemonday
 github.com/mitchellh/colorstring
 # github.com/mitchellh/copystructure v1.0.0
 github.com/mitchellh/copystructure
-# github.com/mitchellh/go-homedir v1.0.0
+# github.com/mitchellh/go-homedir v1.1.0
 ## explicit
 github.com/mitchellh/go-homedir
 # github.com/mitchellh/go-testing-interface v1.0.0
@@ -240,9 +244,8 @@ github.com/nlopes/slack/slackutilsx
 # github.com/onsi/ginkgo v1.9.0
 ## explicit
 # github.com/onsi/gomega v1.4.3
-## explicit
 github.com/onsi/gomega/format
-# github.com/pelletier/go-toml v1.2.0
+# github.com/pelletier/go-toml v1.4.0
 github.com/pelletier/go-toml
 # github.com/petergtz/pegomock v2.9.0+incompatible
 ## explicit
@@ -266,7 +269,7 @@ github.com/shurcooL/graphql/ident
 github.com/shurcooL/graphql/internal/jsonutil
 # github.com/sirupsen/logrus v1.2.0
 github.com/sirupsen/logrus
-# github.com/spf13/afero v1.1.2
+# github.com/spf13/afero v1.2.2
 github.com/spf13/afero
 github.com/spf13/afero/mem
 # github.com/spf13/cast v1.3.1
@@ -274,7 +277,7 @@ github.com/spf13/cast
 # github.com/spf13/cobra v0.0.0-20170905172051-b78744579491
 ## explicit
 github.com/spf13/cobra
-# github.com/spf13/jwalterweatherman v1.0.0
+# github.com/spf13/jwalterweatherman v1.1.0
 github.com/spf13/jwalterweatherman
 # github.com/spf13/pflag v1.0.5
 ## explicit
@@ -295,6 +298,9 @@ github.com/urfave/cli
 # github.com/urfave/negroni v0.3.0
 ## explicit
 github.com/urfave/negroni
+# github.com/warrensbox/terraform-switcher v0.1.1-0.20201113040939-322d0f506bc6
+## explicit
+github.com/warrensbox/terraform-switcher/lib
 # github.com/xanzy/go-gitlab v0.34.1
 ## explicit
 github.com/xanzy/go-gitlab
