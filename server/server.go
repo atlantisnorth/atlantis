@@ -624,6 +624,8 @@ func (s *Server) Start() error {
 	s.Router.HandleFunc("/events", s.EventsController.Post).Methods("POST")
 	s.Router.HandleFunc("/github-app/exchange-code", s.GithubAppController.ExchangeCode).Methods("GET")
 	s.Router.HandleFunc("/github-app/setup", s.GithubAppController.New).Methods("GET")
+	s.Router.HandleFunc("/api/locks", s.LocksController.Unlock).Methods("DELETE")
+	s.Router.HandleFunc("/api/locks", s.LocksController.GetLocks).Methods("GET")
 	s.Router.HandleFunc("/locks", s.LocksController.DeleteLock).Methods("DELETE").Queries("id", "{id:.*}")
 	s.Router.HandleFunc("/lock", s.LocksController.GetLock).Methods("GET").
 		Queries(LockViewRouteIDQueryParam, fmt.Sprintf("{%s}", LockViewRouteIDQueryParam)).Name(LockViewRouteName)
