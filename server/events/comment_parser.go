@@ -54,7 +54,7 @@ var multiLineRegex = regexp.MustCompile(`.*\r?\n[^\r\n]+`)
 type CommentParsing interface {
 	// Parse attempts to parse a pull request comment to see if it's an Atlantis
 	// command.
-	Parse(comment string, vcsHost models.VCSHostType) CommentParseResult
+	Parse(comment string, user models.User, vcsHost models.VCSHostType) CommentParseResult
 }
 
 //go:generate pegomock generate -m --use-experimental-model-gen --package mocks -o mocks/mock_comment_building.go CommentBuilder
@@ -105,7 +105,7 @@ type CommentParseResult struct {
 // - atlantis plan --verbose -- -key=value -key2 value2
 // - atlantis approve_policies
 //
-func (e *CommentParser) Parse(comment string, vcsHost models.VCSHostType) CommentParseResult {
+func (e *CommentParser) Parse(comment string, user models.User, vcsHost models.VCSHostType) CommentParseResult {
 	if multiLineRegex.MatchString(comment) {
 		return CommentParseResult{Ignore: true}
 	}
@@ -173,6 +173,7 @@ func (e *CommentParser) Parse(comment string, vcsHost models.VCSHostType) Commen
 	var verbose bool
 	var flagSet *pflag.FlagSet
 	var name models.CommandName
+	// var commentAuthor string
 
 	// Set up the flag parsing depending on the command.
 	switch command {
@@ -256,7 +257,7 @@ func (e *CommentParser) Parse(comment string, vcsHost models.VCSHostType) Commen
 	}
 
 	return CommentParseResult{
-		Command: NewCommentCommand(dir, extraArgs, name, verbose, workspace, project),
+		Command: NewCommentCommand(dir, extraArgs, name, verbose, workspace, project, user.Username),
 	}
 }
 

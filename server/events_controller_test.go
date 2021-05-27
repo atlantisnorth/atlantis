@@ -43,6 +43,10 @@ const azuredevopsHeader = "Request-Id"
 
 var secret = []byte("secret")
 
+var user = models.User{
+	Username: "username",
+}
+
 func TestPost_NotGithubOrGitlab(t *testing.T) {
 	t.Log("when the request is not for gitlab or github a 400 is returned")
 	e, _, _, _, _, _, _, _ := setup(t)
@@ -162,7 +166,7 @@ func TestPost_GitlabCommentInvalidCommand(t *testing.T) {
 	req, _ := http.NewRequest("GET", "", bytes.NewBuffer(nil))
 	req.Header.Set(gitlabHeader, "value")
 	When(gl.ParseAndValidate(req, secret)).ThenReturn(gitlab.MergeCommentEvent{}, nil)
-	When(cp.Parse("", models.Gitlab)).ThenReturn(events.CommentParseResult{Ignore: true})
+	When(cp.Parse("", user, models.Gitlab)).ThenReturn(events.CommentParseResult{Ignore: true})
 	w := httptest.NewRecorder()
 	e.Post(w, req)
 	responseContains(t, w, http.StatusOK, "Ignoring non-command comment: \"\"")
@@ -176,7 +180,7 @@ func TestPost_GithubCommentInvalidCommand(t *testing.T) {
 	event := `{"action": "created"}`
 	When(v.Validate(req, secret)).ThenReturn([]byte(event), nil)
 	When(p.ParseGithubIssueCommentEvent(matchers.AnyPtrToGithubIssueCommentEvent())).ThenReturn(models.Repo{}, models.User{}, 1, nil)
-	When(cp.Parse("", models.Github)).ThenReturn(events.CommentParseResult{Ignore: true})
+	When(cp.Parse("", user, models.Github)).ThenReturn(events.CommentParseResult{Ignore: true})
 	w := httptest.NewRecorder()
 	e.Post(w, req)
 	responseContains(t, w, http.StatusOK, "Ignoring non-command comment: \"\"")
@@ -303,7 +307,7 @@ func TestPost_GitlabCommentResponse(t *testing.T) {
 	req, _ := http.NewRequest("GET", "", bytes.NewBuffer(nil))
 	req.Header.Set(gitlabHeader, "value")
 	When(gl.ParseAndValidate(req, secret)).ThenReturn(gitlab.MergeCommentEvent{}, nil)
-	When(cp.Parse("", models.Gitlab)).ThenReturn(events.CommentParseResult{CommentResponse: "a comment"})
+	When(cp.Parse("", user, models.Gitlab)).ThenReturn(events.CommentParseResult{CommentResponse: "a comment"})
 	w := httptest.NewRecorder()
 	e.Post(w, req)
 	vcsClient.VerifyWasCalledOnce().CreateComment(models.Repo{}, 0, "a comment", "")
@@ -320,10 +324,12 @@ func TestPost_GithubCommentResponse(t *testing.T) {
 	baseRepo := models.Repo{}
 	user := models.User{}
 	When(p.ParseGithubIssueCommentEvent(matchers.AnyPtrToGithubIssueCommentEvent())).ThenReturn(baseRepo, user, 1, nil)
-	When(cp.Parse("", models.Github)).ThenReturn(events.CommentParseResult{CommentResponse: "a comment"})
+	When(cp.Parse("", user, models.Github)).ThenReturn(events.CommentParseResult{CommentResponse: "a comment"})
 	w := httptest.NewRecorder()
 
 	e.Post(w, req)
+
+	cp.VerifyWasCalledOnce().Parse("", user, models.Github)
 	vcsClient.VerifyWasCalledOnce().CreateComment(baseRepo, 1, "a comment", "")
 	responseContains(t, w, http.StatusOK, "Commenting back on pull request")
 }
@@ -352,7 +358,7 @@ func TestPost_GithubCommentSuccess(t *testing.T) {
 	user := models.User{}
 	cmd := events.CommentCommand{}
 	When(p.ParseGithubIssueCommentEvent(matchers.AnyPtrToGithubIssueCommentEvent())).ThenReturn(baseRepo, user, 1, nil)
-	When(cp.Parse("", models.Github)).ThenReturn(events.CommentParseResult{Command: &cmd})
+	When(cp.Parse("", user, models.Github)).ThenReturn(events.CommentParseResult{Command: &cmd})
 	w := httptest.NewRecorder()
 	e.Post(w, req)
 	responseContains(t, w, http.StatusOK, "Processing...")

@@ -404,7 +404,7 @@ func (e *EventsController) HandleGitlabCommentEvent(w http.ResponseWriter, event
 }
 
 func (e *EventsController) handleCommentEvent(w http.ResponseWriter, baseRepo models.Repo, maybeHeadRepo *models.Repo, maybePull *models.PullRequest, user models.User, pullNum int, comment string, vcsHost models.VCSHostType) {
-	parseResult := e.CommentParser.Parse(comment, vcsHost)
+	parseResult := e.CommentParser.Parse(comment, user, vcsHost)
 	if parseResult.Ignore {
 		truncated := comment
 		truncateLen := 40

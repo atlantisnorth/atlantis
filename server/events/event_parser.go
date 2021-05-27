@@ -99,7 +99,8 @@ type CommentCommand struct {
 	// ProjectName is the name of a project to run the command on. It refers to a
 	// project specified in an atlantis.yaml file.
 	// If empty then the comment specified no project.
-	ProjectName string
+	ProjectName   string
+	CommentAuthor string
 }
 
 // IsForSpecificProject returns true if the command is for a specific dir, workspace
@@ -126,11 +127,11 @@ func (c CommentCommand) IsAutoplan() bool {
 
 // String returns a string representation of the command.
 func (c CommentCommand) String() string {
-	return fmt.Sprintf("command=%q verbose=%t dir=%q workspace=%q project=%q flags=%q", c.Name.String(), c.Verbose, c.RepoRelDir, c.Workspace, c.ProjectName, strings.Join(c.Flags, ","))
+	return fmt.Sprintf("command=%q verbose=%t dir=%q workspace=%q project=%q flags=%q commentAuthor=%q", c.Name.String(), c.Verbose, c.RepoRelDir, c.Workspace, c.ProjectName, strings.Join(c.Flags, ","), c.CommentAuthor)
 }
 
 // NewCommentCommand constructs a CommentCommand, setting all missing fields to defaults.
-func NewCommentCommand(repoRelDir string, flags []string, name models.CommandName, verbose bool, workspace string, project string) *CommentCommand {
+func NewCommentCommand(repoRelDir string, flags []string, name models.CommandName, verbose bool, workspace string, project string, commentAuthor string) *CommentCommand {
 	// If repoRelDir was empty we want to keep it that way to indicate that it
 	// wasn't specified in the comment.
 	if repoRelDir != "" {
@@ -140,12 +141,13 @@ func NewCommentCommand(repoRelDir string, flags []string, name models.CommandNam
 		}
 	}
 	return &CommentCommand{
-		RepoRelDir:  repoRelDir,
-		Flags:       flags,
-		Name:        name,
-		Verbose:     verbose,
-		Workspace:   workspace,
-		ProjectName: project,
+		RepoRelDir:    repoRelDir,
+		Flags:         flags,
+		Name:          name,
+		Verbose:       verbose,
+		Workspace:     workspace,
+		ProjectName:   project,
+		CommentAuthor: commentAuthor,
 	}
 }
 
@@ -157,7 +159,7 @@ func NewCommentCommand(repoRelDir string, flags []string, name models.CommandNam
 type EventParsing interface {
 	// ParseGithubIssueCommentEvent parses GitHub pull request comment events.
 	// baseRepo is the repo that the pull request will be merged into.
-	// user is the pull request author.
+	// user is the comment author.
 	// pullNum is the number of the pull request that triggered the webhook.
 	ParseGithubIssueCommentEvent(comment *github.IssueCommentEvent) (
 		baseRepo models.Repo, user models.User, pullNum int, err error)
