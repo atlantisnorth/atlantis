@@ -25,6 +25,7 @@ import (
 const atlantisVersion = "0.17.0"
 
 func main() {
+
 	v := viper.New()
 
 	logger, err := logging.NewStructuredLogger()

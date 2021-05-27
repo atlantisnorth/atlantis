@@ -61,7 +61,11 @@ type EventsController struct {
 	// UI that identifies this call as coming from GitLab. If empty, no
 	// request validation is done.
 	GitlabWebhookSecret  []byte
-	RepoAllowlistChecker *events.RepoAllowlistChecker
+	TeamAllowlistChecker *events.TeamAllowlistChecker
+	// SilenceWhitelistErrors controls whether we write an error comment on
+	// pull requests from non-whitelisted repos.
+	SilenceWhitelistErrors bool
+	RepoAllowlistChecker   *events.RepoAllowlistChecker
 	// SilenceAllowlistErrors controls whether we write an error comment on
 	// pull requests from non-allowlisted repos.
 	SilenceAllowlistErrors bool
@@ -436,6 +440,20 @@ func (e *EventsController) handleCommentEvent(w http.ResponseWriter, baseRepo mo
 		return
 	}
 
+	// Check if the user who commented has the permissions to execute the 'plan' or 'apply' commands
+	if !e.TestingMode {
+		ok, err := e.checkUserPermissions(baseRepo, user, parseResult.Command)
+		if err != nil {
+			e.Logger.Err("unable to comment on pull request: %s", err)
+			return
+		}
+		if !ok {
+			e.commentUserDoesNotHavePermissions(baseRepo, pullNum, user, parseResult.Command)
+			e.respond(w, logging.Warn, http.StatusForbidden, "User @%s does not have permissions to execute '%s' command", user.Username, parseResult.Command.Name.String())
+			return
+		}
+	}
+
 	e.Logger.Debug("executing command")
 	fmt.Fprintln(w, "Processing...")
 	if !e.TestingMode {
@@ -552,4 +570,28 @@ func (e *EventsController) commentNotAllowlisted(baseRepo models.Repo, pullNum i
 	if err := e.VCSClient.CreateComment(baseRepo, pullNum, errMsg, ""); err != nil {
 		e.Logger.Err("unable to comment on pull request: %s", err)
 	}
+}
+
+// commentUserDoesNotHavePermissions comments on the pull request that the user
+// is not allowed to execute the command.
+func (e *EventsController) commentUserDoesNotHavePermissions(baseRepo models.Repo, pullNum int, user models.User, cmd *events.CommentCommand) {
+	errMsg := fmt.Sprintf("```\nError: User @%s does not have permissions to execute '%s' command.\n```", user.Username, cmd.Name)
+	if err := e.VCSClient.CreateComment(baseRepo, pullNum, errMsg, ""); err != nil {
+		e.Logger.Err("unable to comment on pull request: %s", err)
+	}
+}
+
+// checkUserPermissions checks if the user has permissions to execute the command
+func (e *EventsController) checkUserPermissions(repo models.Repo, user models.User, cmd *events.CommentCommand) (bool, error) {
+	if cmd.Name == models.ApplyCommand || cmd.Name == models.PlanCommand {
+		teams, err := e.VCSClient.GetTeamNamesForUser(repo, user)
+		if err != nil {
+			return false, err
+		}
+		ok := e.TeamAllowlistChecker.IsCommandAllowedForAnyTeam(teams, cmd.Name.String())
+		if !ok {
+			return false, nil
+		}
+	}
+	return true, nil
 }

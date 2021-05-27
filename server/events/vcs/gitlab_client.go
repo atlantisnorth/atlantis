@@ -274,6 +274,11 @@ func MustConstraint(constraint string) version.Constraints {
 	return c
 }
 
+// GetTeamNamesForUser returns the names of the teams or groups that the user belongs to (in the organization the repository belongs to).
+func (g *GitlabClient) GetTeamNamesForUser(repo models.Repo, user models.User) ([]string, error) {
+	return nil, nil
+}
+
 // DownloadRepoConfigFile return `atlantis.yaml` content from VCS (which support fetch a single file from repository)
 // The first return value indicate that repo contain atlantis.yaml or not
 // if BaseRepo had one repo config file, its content will placed on the second return value

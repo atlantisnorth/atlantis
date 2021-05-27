@@ -577,6 +577,10 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	githubTeamAllowlistChecker, err := events.NewTeamAllowlistChecker(userConfig.GithubTeamAllowlist)
+	if err != nil {
+		return nil, err
+	}
 	locksController := &LocksController{
 		AtlantisVersion:    config.AtlantisVersion,
 		AtlantisURL:        parsedURL,
@@ -599,6 +603,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		ApplyDisabled:                   userConfig.DisableApply,
 		GithubWebhookSecret:             []byte(userConfig.GithubWebhookSecret),
 		GithubRequestValidator:          &DefaultGithubRequestValidator{},
+		TeamAllowlistChecker:            githubTeamAllowlistChecker,
 		GitlabRequestParserValidator:    &DefaultGitlabRequestParserValidator{},
 		GitlabWebhookSecret:             []byte(userConfig.GitlabWebhookSecret),
 		RepoAllowlistChecker:            repoAllowlist,
