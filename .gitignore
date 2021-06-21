@@ -13,3 +13,5 @@ helm/test-values.yaml
 *.swp
 golangci-lint
 atlantis
+atlantis_amd64
+atlantis_arm64

@@ -53,20 +53,21 @@ jobs:
     - image: circleci/golang:1.16 # If you update this, update it in the Makefile too
     steps:
     - checkout
-    - run: make build-service
+    - run: make build-service-multiarch
     - setup_remote_docker
     - run:
-        name: Build image
+        name: Install buildx
         command: |
-          if [ "${CIRCLE_BRANCH}" == "master" ]; then
-            docker build -t runatlantis/atlantis:latest .
-          fi
+          mkdir -p ~/.docker/cli-plugins
+          BUILDX_URL=$(curl https://api.github.com/repos/docker/buildx/releases/latest | jq -r .assets[].browser_download_url | grep amd64 | grep linux)
+          wget $BUILDX_URL -O ~/.docker/cli-plugins/docker-build
+          chmod +x ~/.docker/cli-plugins/docker-buildx
     - run:
-        name: Push image
+        name: Build and push image
         command: |
           if [ "${CIRCLE_BRANCH}" == "master" ]; then
-            docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
-            docker push runatlantis/atlantis:latest
+          docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
+            docker buildx build --platform "linux/amd64,linux/arm64" --push -t runatlantis/atlantis:latest .
           fi
   # Build and push Docker tag.
   docker_tag:
@@ -74,15 +75,21 @@ jobs:
     - image: circleci/golang:1.16 # If you update this, update it in the Makefile too
     steps:
     - checkout
-    - run: make build-service
+    - run: make build-service-multiarch
     - setup_remote_docker
+    - run:
+        name: Install buildx
+        command: |
+          mkdir -p ~/.docker/cli-plugins
+          BUILDX_URL=$(curl https://api.github.com/repos/docker/buildx/releases/latest | jq -r .assets[].browser_download_url | grep amd64 | grep linux)
+          wget $BUILDX_URL -O ~/.docker/cli-plugins/docker-build
+          chmod +x ~/.docker/cli-plugins/docker-buildx
     - run:
         name: Build and tag
         command: |
           if [ -n "${CIRCLE_TAG}" ]; then
-            docker build -t "runatlantis/atlantis:${CIRCLE_TAG}" .
             docker login -u "$DOCKER_USER" -p "$DOCKER_PASSWORD"
-            docker push "runatlantis/atlantis:${CIRCLE_TAG}"
+            docker buildx build --platform "linux/amd64,linux/arm64" --push -t runatlantis/atlantis:${CIRCLE_TAG} .
           fi
 workflows:
   version: 2

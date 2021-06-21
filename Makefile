@@ -22,6 +22,10 @@ debug: ## Output internal make variables
 build-service: ## Build the main Go service
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o atlantis .
 
+build-service-multiarch: ## Build the main Go service
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o atlantis_amd64 .
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -v -o atlantis_arm64 .
+
 go-generate: ## Run go generate in all packages
 	./scripts/go-generate.sh
 

@@ -1,3 +1,4 @@
 *
 !docker-entrypoint.sh
-!atlantis
+!atlantis_arm64
+!atlantis_amd64

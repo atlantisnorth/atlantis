@@ -21,12 +21,21 @@ RUN addgroup atlantis && \
 ENV DUMB_INIT_VERSION=1.2.5
 ENV GOSU_VERSION=1.12
 RUN apk add --no-cache ca-certificates gnupg curl git git-lfs unzip bash openssh libcap openssl && \
-    curl -L -s --output /bin/dumb-init "https://github.com/Yelp/dumb-init/releases/download/v${DUMB_INIT_VERSION}/dumb-init_${DUMB_INIT_VERSION}_x86_64" && \
+    curl -L -s --output /bin/dumb-init "https://github.com/Yelp/dumb-init/releases/download/v${DUMB_INIT_VERSION}/dumb-init_${DUMB_INIT_VERSION}_$(arch)" && \
     chmod +x /bin/dumb-init && \
     mkdir -p /tmp/build && \
     cd /tmp/build && \
-    curl -L -s --output gosu "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64" && \
-    curl -L -s --output gosu.asc "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-amd64.asc" && \
+    ARCH="amd64" && \
+    case "$(arch)" in \
+    "aarch64") \
+        ARCH="arm64" \
+        ;; \
+    "armv7l") \
+        ARCH="arm" \
+        ;; \
+    esac && \
+    curl -L -s --output gosu "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${ARCH}" && \
+    curl -L -s --output gosu.asc "https://github.com/tianon/gosu/releases/download/${GOSU_VERSION}/gosu-${ARCH}.asc" && \
     for server in $(shuf -e ipv4.pool.sks-keyservers.net \
                             hkp://p80.pool.sks-keyservers.net:80 \
                             keyserver.ubuntu.com \
