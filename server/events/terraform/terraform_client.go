@@ -310,7 +310,6 @@ func (c *DefaultClient) prepCmd(log logging.SimpleLogging, v *version.Version, w
 		"TF_IN_AUTOMATION=true",
 		// Cache plugins so terraform init runs faster.
 		fmt.Sprintf("WORKSPACE=%s", workspace),
-		fmt.Sprintf("TF_WORKSPACE=%s", workspace),
 		fmt.Sprintf("ATLANTIS_TERRAFORM_VERSION=%s", v.String()),
 		fmt.Sprintf("DIR=%s", path),
 	}
