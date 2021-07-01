@@ -9,11 +9,11 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func TestPreWorkflowHook_YAMLMarshalling(t *testing.T) {
+func TestWorkflowHook_YAMLMarshalling(t *testing.T) {
 	cases := []struct {
 		description string
 		input       string
-		exp         raw.PreWorkflowHook
+		exp         raw.WorkflowHook
 		expErr      string
 	}{
 		// Run-step style
@@ -21,7 +21,7 @@ func TestPreWorkflowHook_YAMLMarshalling(t *testing.T) {
 			description: "run step",
 			input: `
 run: my command`,
-			exp: raw.PreWorkflowHook{
+			exp: raw.WorkflowHook{
 				StringVal: map[string]string{
 					"run": "my command",
 				},
@@ -32,7 +32,7 @@ run: my command`,
 			input: `
 run: my command
 key: value`,
-			exp: raw.PreWorkflowHook{
+			exp: raw.WorkflowHook{
 				StringVal: map[string]string{
 					"run": "my command",
 					"key": "value",
@@ -53,7 +53,7 @@ key:
 
 	for _, c := range cases {
 		t.Run(c.description, func(t *testing.T) {
-			var got raw.PreWorkflowHook
+			var got raw.WorkflowHook
 			err := yaml.UnmarshalStrict([]byte(c.input), &got)
 			if c.expErr != "" {
 				ErrEquals(t, c.expErr, err)
@@ -65,7 +65,7 @@ key:
 			_, err = yaml.Marshal(got)
 			Ok(t, err)
 
-			var got2 raw.PreWorkflowHook
+			var got2 raw.WorkflowHook
 			err = yaml.UnmarshalStrict([]byte(c.input), &got2)
 			Ok(t, err)
 			Equals(t, got2, got)
@@ -76,12 +76,12 @@ key:
 func TestGlobalConfigStep_Validate(t *testing.T) {
 	cases := []struct {
 		description string
-		input       raw.PreWorkflowHook
+		input       raw.WorkflowHook
 		expErr      string
 	}{
 		{
 			description: "run step",
-			input: raw.PreWorkflowHook{
+			input: raw.WorkflowHook{
 				StringVal: map[string]string{
 					"run": "my command",
 				},
@@ -90,7 +90,7 @@ func TestGlobalConfigStep_Validate(t *testing.T) {
 		},
 		{
 			description: "invalid key in string val",
-			input: raw.PreWorkflowHook{
+			input: raw.WorkflowHook{
 				StringVal: map[string]string{
 					"invalid": "",
 				},
@@ -101,7 +101,7 @@ func TestGlobalConfigStep_Validate(t *testing.T) {
 			// For atlantis.yaml v2, this wouldn't parse, but now there should
 			// be no error.
 			description: "unparseable shell command",
-			input: raw.PreWorkflowHook{
+			input: raw.WorkflowHook{
 				StringVal: map[string]string{
 					"run": "my 'c",
 				},
@@ -120,20 +120,20 @@ func TestGlobalConfigStep_Validate(t *testing.T) {
 	}
 }
 
-func TestPreWorkflowHook_ToValid(t *testing.T) {
+func TestWorkflowHook_ToValid(t *testing.T) {
 	cases := []struct {
 		description string
-		input       raw.PreWorkflowHook
-		exp         *valid.PreWorkflowHook
+		input       raw.WorkflowHook
+		exp         *valid.WorkflowHook
 	}{
 		{
 			description: "run step",
-			input: raw.PreWorkflowHook{
+			input: raw.WorkflowHook{
 				StringVal: map[string]string{
 					"run": "my 'run command'",
 				},
 			},
-			exp: &valid.PreWorkflowHook{
+			exp: &valid.WorkflowHook{
 				StepName:   "run",
 				RunCommand: "my 'run command'",
 			},

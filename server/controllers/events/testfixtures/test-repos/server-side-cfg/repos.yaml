@@ -3,6 +3,8 @@ repos:
   pre_workflow_hooks:
     - run: echo "hello"
   workflow: custom
+  post_workflow_hooks:
+    - run: echo "hello"
   allowed_overrides: [workflow]
 workflows:
   custom:

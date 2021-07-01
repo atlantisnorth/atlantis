@@ -16,22 +16,22 @@ import (
 	. "github.com/runatlantis/atlantis/testing"
 )
 
-var wh events.DefaultPreWorkflowHooksCommandRunner
-var whWorkingDir *mocks.MockWorkingDir
-var whWorkingDirLocker *mocks.MockWorkingDirLocker
+var preWh events.DefaultPreWorkflowHooksCommandRunner
+var preWhWorkingDir *mocks.MockWorkingDir
+var preWhWorkingDirLocker *mocks.MockWorkingDirLocker
 var whPreWorkflowHookRunner *runtime_mocks.MockPreWorkflowHookRunner
 
 func preWorkflowHooksSetup(t *testing.T) {
 	RegisterMockTestingT(t)
 	vcsClient := vcsmocks.NewMockClient()
-	whWorkingDir = mocks.NewMockWorkingDir()
-	whWorkingDirLocker = mocks.NewMockWorkingDirLocker()
+	preWhWorkingDir = mocks.NewMockWorkingDir()
+	preWhWorkingDirLocker = mocks.NewMockWorkingDirLocker()
 	whPreWorkflowHookRunner = runtime_mocks.NewMockPreWorkflowHookRunner()
 
-	wh = events.DefaultPreWorkflowHooksCommandRunner{
+	preWh = events.DefaultPreWorkflowHooksCommandRunner{
 		VCSClient:             vcsClient,
-		WorkingDirLocker:      whWorkingDirLocker,
-		WorkingDir:            whWorkingDir,
+		WorkingDirLocker:      preWhWorkingDirLocker,
+		WorkingDir:            preWhWorkingDir,
 		PreWorkflowHookRunner: whPreWorkflowHookRunner,
 	}
 }
@@ -54,12 +54,12 @@ func TestRunPreHooks_Clone(t *testing.T) {
 		Log:      log,
 	}
 
-	testHook := valid.PreWorkflowHook{
+	testHook := valid.WorkflowHook{
 		StepName:   "test",
 		RunCommand: "some command",
 	}
 
-	pCtx := models.PreWorkflowHookCommandContext{
+	pCtx := models.WorkflowHookCommandContext{
 		BaseRepo: fixtures.GithubRepo,
 		HeadRepo: fixtures.GithubRepo,
 		Pull:     newPull,
@@ -83,20 +83,20 @@ func TestRunPreHooks_Clone(t *testing.T) {
 			Repos: []valid.Repo{
 				{
 					ID: fixtures.GithubRepo.ID(),
-					PreWorkflowHooks: []*valid.PreWorkflowHook{
+					PreWorkflowHooks: []*valid.WorkflowHook{
 						&testHook,
 					},
 				},
 			},
 		}
 
-		wh.GlobalCfg = globalCfg
+		preWh.GlobalCfg = globalCfg
 
-		When(whWorkingDirLocker.TryLock(fixtures.GithubRepo.FullName, newPull.Num, events.DefaultWorkspace)).ThenReturn(unlockFn, nil)
-		When(whWorkingDir.Clone(log, fixtures.GithubRepo, newPull, events.DefaultWorkspace)).ThenReturn(repoDir, false, nil)
+		When(preWhWorkingDirLocker.TryLock(fixtures.GithubRepo.FullName, newPull.Num, events.DefaultWorkspace)).ThenReturn(unlockFn, nil)
+		When(preWhWorkingDir.Clone(log, fixtures.GithubRepo, newPull, events.DefaultWorkspace)).ThenReturn(repoDir, false, nil)
 		When(whPreWorkflowHookRunner.Run(pCtx, testHook.RunCommand, repoDir)).ThenReturn(result, nil)
 
-		err := wh.RunPreHooks(ctx)
+		err := preWh.RunPreHooks(ctx)
 
 		Ok(t, err)
 		whPreWorkflowHookRunner.VerifyWasCalledOnce().Run(pCtx, testHook.RunCommand, repoDir)
@@ -109,27 +109,27 @@ func TestRunPreHooks_Clone(t *testing.T) {
 				// one with hooks but mismatched id
 				{
 					ID: "id1",
-					PreWorkflowHooks: []*valid.PreWorkflowHook{
+					PreWorkflowHooks: []*valid.WorkflowHook{
 						&testHook,
 					},
 				},
 				// one with the correct id but no hooks
 				{
 					ID:               fixtures.GithubRepo.ID(),
-					PreWorkflowHooks: []*valid.PreWorkflowHook{},
+					PreWorkflowHooks: []*valid.WorkflowHook{},
 				},
 			},
 		}
 
-		wh.GlobalCfg = globalCfg
+		preWh.GlobalCfg = globalCfg
 
-		err := wh.RunPreHooks(ctx)
+		err := preWh.RunPreHooks(ctx)
 
 		Ok(t, err)
 
 		whPreWorkflowHookRunner.VerifyWasCalled(Never()).Run(pCtx, testHook.RunCommand, repoDir)
-		whWorkingDirLocker.VerifyWasCalled(Never()).TryLock(fixtures.GithubRepo.FullName, newPull.Num, events.DefaultWorkspace)
-		whWorkingDir.VerifyWasCalled(Never()).Clone(log, fixtures.GithubRepo, newPull, events.DefaultWorkspace)
+		preWhWorkingDirLocker.VerifyWasCalled(Never()).TryLock(fixtures.GithubRepo.FullName, newPull.Num, events.DefaultWorkspace)
+		preWhWorkingDir.VerifyWasCalled(Never()).Clone(log, fixtures.GithubRepo, newPull, events.DefaultWorkspace)
 	})
 	t.Run("error locking work dir", func(t *testing.T) {
 		preWorkflowHooksSetup(t)
@@ -138,21 +138,21 @@ func TestRunPreHooks_Clone(t *testing.T) {
 			Repos: []valid.Repo{
 				{
 					ID: fixtures.GithubRepo.ID(),
-					PreWorkflowHooks: []*valid.PreWorkflowHook{
+					PreWorkflowHooks: []*valid.WorkflowHook{
 						&testHook,
 					},
 				},
 			},
 		}
 
-		wh.GlobalCfg = globalCfg
+		preWh.GlobalCfg = globalCfg
 
-		When(whWorkingDirLocker.TryLock(fixtures.GithubRepo.FullName, newPull.Num, events.DefaultWorkspace)).ThenReturn(func() {}, errors.New("some error"))
+		When(preWhWorkingDirLocker.TryLock(fixtures.GithubRepo.FullName, newPull.Num, events.DefaultWorkspace)).ThenReturn(func() {}, errors.New("some error"))
 
-		err := wh.RunPreHooks(ctx)
+		err := preWh.RunPreHooks(ctx)
 
 		Assert(t, err != nil, "error not nil")
-		whWorkingDir.VerifyWasCalled(Never()).Clone(log, fixtures.GithubRepo, newPull, events.DefaultWorkspace)
+		preWhWorkingDir.VerifyWasCalled(Never()).Clone(log, fixtures.GithubRepo, newPull, events.DefaultWorkspace)
 		whPreWorkflowHookRunner.VerifyWasCalled(Never()).Run(pCtx, testHook.RunCommand, repoDir)
 	})
 
@@ -168,19 +168,19 @@ func TestRunPreHooks_Clone(t *testing.T) {
 			Repos: []valid.Repo{
 				{
 					ID: fixtures.GithubRepo.ID(),
-					PreWorkflowHooks: []*valid.PreWorkflowHook{
+					PreWorkflowHooks: []*valid.WorkflowHook{
 						&testHook,
 					},
 				},
 			},
 		}
 
-		wh.GlobalCfg = globalCfg
+		preWh.GlobalCfg = globalCfg
 
-		When(whWorkingDirLocker.TryLock(fixtures.GithubRepo.FullName, newPull.Num, events.DefaultWorkspace)).ThenReturn(unlockFn, nil)
-		When(whWorkingDir.Clone(log, fixtures.GithubRepo, newPull, events.DefaultWorkspace)).ThenReturn(repoDir, false, errors.New("some error"))
+		When(preWhWorkingDirLocker.TryLock(fixtures.GithubRepo.FullName, newPull.Num, events.DefaultWorkspace)).ThenReturn(unlockFn, nil)
+		When(preWhWorkingDir.Clone(log, fixtures.GithubRepo, newPull, events.DefaultWorkspace)).ThenReturn(repoDir, false, errors.New("some error"))
 
-		err := wh.RunPreHooks(ctx)
+		err := preWh.RunPreHooks(ctx)
 
 		Assert(t, err != nil, "error not nil")
 
@@ -200,20 +200,20 @@ func TestRunPreHooks_Clone(t *testing.T) {
 			Repos: []valid.Repo{
 				{
 					ID: fixtures.GithubRepo.ID(),
-					PreWorkflowHooks: []*valid.PreWorkflowHook{
+					PreWorkflowHooks: []*valid.WorkflowHook{
 						&testHook,
 					},
 				},
 			},
 		}
 
-		wh.GlobalCfg = globalCfg
+		preWh.GlobalCfg = globalCfg
 
-		When(whWorkingDirLocker.TryLock(fixtures.GithubRepo.FullName, newPull.Num, events.DefaultWorkspace)).ThenReturn(unlockFn, nil)
-		When(whWorkingDir.Clone(log, fixtures.GithubRepo, newPull, events.DefaultWorkspace)).ThenReturn(repoDir, false, nil)
+		When(preWhWorkingDirLocker.TryLock(fixtures.GithubRepo.FullName, newPull.Num, events.DefaultWorkspace)).ThenReturn(unlockFn, nil)
+		When(preWhWorkingDir.Clone(log, fixtures.GithubRepo, newPull, events.DefaultWorkspace)).ThenReturn(repoDir, false, nil)
 		When(whPreWorkflowHookRunner.Run(pCtx, testHook.RunCommand, repoDir)).ThenReturn(result, errors.New("some error"))
 
-		err := wh.RunPreHooks(ctx)
+		err := preWh.RunPreHooks(ctx)
 
 		Assert(t, err != nil, "error not nil")
 		Assert(t, *unlockCalled == true, "unlock function called")

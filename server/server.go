@@ -79,24 +79,25 @@ const (
 
 // Server runs the Atlantis web server.
 type Server struct {
-	AtlantisVersion               string
-	AtlantisURL                   *url.URL
-	Router                        *mux.Router
-	Port                          int
-	PreWorkflowHooksCommandRunner *events.DefaultPreWorkflowHooksCommandRunner
-	CommandRunner                 *events.DefaultCommandRunner
-	Logger                        logging.SimpleLogging
-	Locker                        locking.Locker
-	ApplyLocker                   locking.ApplyLocker
-	VCSEventsController           *events_controllers.VCSEventsController
-	GithubAppController           *controllers.GithubAppController
-	LocksController               *controllers.LocksController
-	StatusController              *controllers.StatusController
-	IndexTemplate                 templates.TemplateWriter
-	LockDetailTemplate            templates.TemplateWriter
-	SSLCertFile                   string
-	SSLKeyFile                    string
-	Drainer                       *events.Drainer
+	AtlantisVersion                string
+	AtlantisURL                    *url.URL
+	Router                         *mux.Router
+	Port                           int
+	PostWorkflowHooksCommandRunner *events.DefaultPostWorkflowHooksCommandRunner
+	PreWorkflowHooksCommandRunner  *events.DefaultPreWorkflowHooksCommandRunner
+	CommandRunner                  *events.DefaultCommandRunner
+	Logger                         logging.SimpleLogging
+	Locker                         locking.Locker
+	ApplyLocker                    locking.ApplyLocker
+	VCSEventsController            *events_controllers.VCSEventsController
+	GithubAppController            *controllers.GithubAppController
+	LocksController                *controllers.LocksController
+	StatusController               *controllers.StatusController
+	IndexTemplate                  templates.TemplateWriter
+	LockDetailTemplate             templates.TemplateWriter
+	SSLCertFile                    string
+	SSLKeyFile                     string
+	Drainer                        *events.Drainer
 }
 
 // Config holds config for server that isn't passed in by the user.
@@ -419,6 +420,13 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 		WorkingDir:            workingDir,
 		PreWorkflowHookRunner: runtime.DefaultPreWorkflowHookRunner{},
 	}
+	postWorkflowHooksCommandRunner := &events.DefaultPostWorkflowHooksCommandRunner{
+		VCSClient:              vcsClient,
+		GlobalCfg:              globalCfg,
+		WorkingDirLocker:       workingDirLocker,
+		WorkingDir:             workingDir,
+		PostWorkflowHookRunner: runtime.DefaultPostWorkflowHookRunner{},
+	}
 	projectCommandBuilder := events.NewProjectCommandBuilder(
 		policyChecksEnabled,
 		validator,
@@ -561,21 +569,22 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	commandRunner := &events.DefaultCommandRunner{
-		VCSClient:                     vcsClient,
-		GithubPullGetter:              githubClient,
-		GitlabMergeRequestGetter:      gitlabClient,
-		AzureDevopsPullGetter:         azuredevopsClient,
-		CommentCommandRunnerByCmd:     commentCommandRunnerByCmd,
-		EventParser:                   eventParser,
-		Logger:                        logger,
-		AllowForkPRs:                  userConfig.AllowForkPRs,
-		AllowForkPRsFlag:              config.AllowForkPRsFlag,
-		SilenceForkPRErrors:           userConfig.SilenceForkPRErrors,
-		SilenceForkPRErrorsFlag:       config.SilenceForkPRErrorsFlag,
-		DisableAutoplan:               userConfig.DisableAutoplan,
-		Drainer:                       drainer,
-		PreWorkflowHooksCommandRunner: preWorkflowHooksCommandRunner,
-		PullStatusFetcher:             boltdb,
+		VCSClient:                      vcsClient,
+		GithubPullGetter:               githubClient,
+		GitlabMergeRequestGetter:       gitlabClient,
+		AzureDevopsPullGetter:          azuredevopsClient,
+		CommentCommandRunnerByCmd:      commentCommandRunnerByCmd,
+		EventParser:                    eventParser,
+		Logger:                         logger,
+		AllowForkPRs:                   userConfig.AllowForkPRs,
+		AllowForkPRsFlag:               config.AllowForkPRsFlag,
+		SilenceForkPRErrors:            userConfig.SilenceForkPRErrors,
+		SilenceForkPRErrorsFlag:        config.SilenceForkPRErrorsFlag,
+		DisableAutoplan:                userConfig.DisableAutoplan,
+		Drainer:                        drainer,
+		PreWorkflowHooksCommandRunner:  preWorkflowHooksCommandRunner,
+		PostWorkflowHooksCommandRunner: postWorkflowHooksCommandRunner,
+		PullStatusFetcher:              boltdb,
 	}
 	repoAllowlist, err := events.NewRepoAllowlistChecker(userConfig.RepoAllowlist)
 	if err != nil {
@@ -623,24 +632,25 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 	}
 
 	return &Server{
-		AtlantisVersion:               config.AtlantisVersion,
-		AtlantisURL:                   parsedURL,
-		Router:                        underlyingRouter,
-		Port:                          userConfig.Port,
-		PreWorkflowHooksCommandRunner: preWorkflowHooksCommandRunner,
-		CommandRunner:                 commandRunner,
-		Logger:                        logger,
-		Locker:                        lockingClient,
-		ApplyLocker:                   applyLockingClient,
-		VCSEventsController:           eventsController,
-		GithubAppController:           githubAppController,
-		LocksController:               locksController,
-		StatusController:              statusController,
-		IndexTemplate:                 templates.IndexTemplate,
-		LockDetailTemplate:            templates.LockTemplate,
-		SSLKeyFile:                    userConfig.SSLKeyFile,
-		SSLCertFile:                   userConfig.SSLCertFile,
-		Drainer:                       drainer,
+		AtlantisVersion:                config.AtlantisVersion,
+		AtlantisURL:                    parsedURL,
+		Router:                         underlyingRouter,
+		Port:                           userConfig.Port,
+		PostWorkflowHooksCommandRunner: postWorkflowHooksCommandRunner,
+		PreWorkflowHooksCommandRunner:  preWorkflowHooksCommandRunner,
+		CommandRunner:                  commandRunner,
+		Logger:                         logger,
+		Locker:                         lockingClient,
+		ApplyLocker:                    applyLockingClient,
+		VCSEventsController:            eventsController,
+		GithubAppController:            githubAppController,
+		LocksController:                locksController,
+		StatusController:               statusController,
+		IndexTemplate:                  templates.IndexTemplate,
+		LockDetailTemplate:             templates.LockTemplate,
+		SSLKeyFile:                     userConfig.SSLKeyFile,
+		SSLCertFile:                    userConfig.SSLCertFile,
+		Drainer:                        drainer,
 	}, nil
 }
 

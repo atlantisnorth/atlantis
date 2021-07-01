@@ -11,29 +11,29 @@ import (
 	"github.com/runatlantis/atlantis/server/events/yaml/valid"
 )
 
-// PreWorkflowHook represents a single action/command to perform. In YAML,
+// WorkflowHook represents a single action/command to perform. In YAML,
 // it can be set as
 // A map for a custom run commands:
 //    - run: my custom command
-type PreWorkflowHook struct {
+type WorkflowHook struct {
 	StringVal map[string]string
 }
 
-func (s *PreWorkflowHook) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (s *WorkflowHook) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return s.unmarshalGeneric(unmarshal)
 }
 
-func (s PreWorkflowHook) MarshalYAML() (interface{}, error) {
+func (s WorkflowHook) MarshalYAML() (interface{}, error) {
 	return s.marshalGeneric()
 }
 
-func (s *PreWorkflowHook) UnmarshalJSON(data []byte) error {
+func (s *WorkflowHook) UnmarshalJSON(data []byte) error {
 	return s.unmarshalGeneric(func(i interface{}) error {
 		return json.Unmarshal(data, i)
 	})
 }
 
-func (s *PreWorkflowHook) MarshalJSON() ([]byte, error) {
+func (s *WorkflowHook) MarshalJSON() ([]byte, error) {
 	out, err := s.marshalGeneric()
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func (s *PreWorkflowHook) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
-func (s PreWorkflowHook) Validate() error {
+func (s WorkflowHook) Validate() error {
 	runStep := func(value interface{}) error {
 		elem := value.(map[string]string)
 		var keys []string
@@ -69,13 +69,13 @@ func (s PreWorkflowHook) Validate() error {
 	return errors.New("step element is empty")
 }
 
-func (s PreWorkflowHook) ToValid() *valid.PreWorkflowHook {
-	// This will trigger in case #4 (see PreWorkflowHook docs).
+func (s WorkflowHook) ToValid() *valid.WorkflowHook {
+	// This will trigger in case #4 (see WorkflowHook docs).
 	if len(s.StringVal) > 0 {
 		// After validation we assume there's only one key and it's a valid
 		// step name so we just use the first one.
 		for _, v := range s.StringVal {
-			return &valid.PreWorkflowHook{
+			return &valid.WorkflowHook{
 				StepName:   RunStepName,
 				RunCommand: v,
 			}
@@ -89,7 +89,7 @@ func (s PreWorkflowHook) ToValid() *valid.PreWorkflowHook {
 // a step a custom run step: " - run: my custom command"
 // It takes a parameter unmarshal that is a function that tries to unmarshal
 // the current element into a given object.
-func (s *PreWorkflowHook) unmarshalGeneric(unmarshal func(interface{}) error) error {
+func (s *WorkflowHook) unmarshalGeneric(unmarshal func(interface{}) error) error {
 	// Try to unmarshal as a custom run step, ex.
 	// repo_config:
 	// - run: my command
@@ -104,7 +104,7 @@ func (s *PreWorkflowHook) unmarshalGeneric(unmarshal func(interface{}) error) er
 	return err
 }
 
-func (s PreWorkflowHook) marshalGeneric() (interface{}, error) {
+func (s WorkflowHook) marshalGeneric() (interface{}, error) {
 	if len(s.StringVal) != 0 {
 		return s.StringVal, nil
 	}

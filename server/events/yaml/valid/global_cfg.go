@@ -16,6 +16,7 @@ const PoliciesPassedApplyReq = "policies_passed"
 const ApplyRequirementsKey = "apply_requirements"
 const PreWorkflowHooksKey = "pre_workflow_hooks"
 const WorkflowKey = "workflow"
+const PostWorkflowHooksKey = "post_workflow_hooks"
 const AllowedWorkflowsKey = "allowed_workflows"
 const AllowedOverridesKey = "allowed_overrides"
 const AllowCustomWorkflowsKey = "allow_custom_workflows"
@@ -46,8 +47,9 @@ type Repo struct {
 	IDRegex                   *regexp.Regexp
 	BranchRegex               *regexp.Regexp
 	ApplyRequirements         []string
-	PreWorkflowHooks          []*PreWorkflowHook
+	PreWorkflowHooks          []*WorkflowHook
 	Workflow                  *Workflow
+	PostWorkflowHooks         []*WorkflowHook
 	AllowedWorkflows          []string
 	AllowedOverrides          []string
 	AllowCustomWorkflows      *bool
@@ -69,8 +71,8 @@ type MergedProjectCfg struct {
 	DeleteSourceBranchOnMerge bool
 }
 
-// PreWorkflowHook is a map of custom run commands to run before workflows.
-type PreWorkflowHook struct {
+// WorkflowHook is a map of custom run commands to run before or after workflows.
+type WorkflowHook struct {
 	StepName   string
 	RunCommand string
 }
@@ -109,13 +111,14 @@ var DefaultPlanStage = Stage{
 }
 
 // Deprecated: use NewGlobalCfgFromArgs
-func NewGlobalCfgWithHooks(allowRepoCfg bool, mergeableReq bool, approvedReq bool, unDivergedReq bool, preWorkflowHooks []*PreWorkflowHook) GlobalCfg {
+func NewGlobalCfgWithHooks(allowRepoCfg bool, mergeableReq bool, approvedReq bool, unDivergedReq bool, preWorkflowHooks []*WorkflowHook, postWorkflowHooks []*WorkflowHook) GlobalCfg {
 	return NewGlobalCfgFromArgs(GlobalCfgArgs{
-		AllowRepoCfg:     allowRepoCfg,
-		MergeableReq:     mergeableReq,
-		ApprovedReq:      approvedReq,
-		UnDivergedReq:    unDivergedReq,
-		PreWorkflowHooks: preWorkflowHooks,
+		AllowRepoCfg:      allowRepoCfg,
+		MergeableReq:      mergeableReq,
+		ApprovedReq:       approvedReq,
+		UnDivergedReq:     unDivergedReq,
+		PreWorkflowHooks:  preWorkflowHooks,
+		PostWorkflowHooks: postWorkflowHooks,
 	})
 }
 
@@ -140,7 +143,8 @@ type GlobalCfgArgs struct {
 	ApprovedReq        bool
 	UnDivergedReq      bool
 	PolicyCheckEnabled bool
-	PreWorkflowHooks   []*PreWorkflowHook
+	PreWorkflowHooks   []*WorkflowHook
+	PostWorkflowHooks  []*WorkflowHook
 }
 
 func NewGlobalCfgFromArgs(args GlobalCfgArgs) GlobalCfg {
@@ -184,6 +188,7 @@ func NewGlobalCfgFromArgs(args GlobalCfgArgs) GlobalCfg {
 				ApplyRequirements:         applyReqs,
 				PreWorkflowHooks:          args.PreWorkflowHooks,
 				Workflow:                  &defaultWorkflow,
+				PostWorkflowHooks:         args.PostWorkflowHooks,
 				AllowedWorkflows:          allowedWorkflows,
 				AllowedOverrides:          allowedOverrides,
 				AllowCustomWorkflows:      &allowCustomWorkflows,

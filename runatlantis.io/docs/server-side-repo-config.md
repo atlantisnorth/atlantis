@@ -60,6 +60,10 @@ repos:
   # pre_workflow_hooks defines arbitrary list of scripts to execute before workflow execution.
   pre_workflow_hooks: 
     - run: my-pre-workflow-hook-command arg1
+  
+  # post_workflow_hooks defines arbitrary list of scripts to execute after workflow execution.
+  post_workflow_hooks: 
+    - run: my-post-workflow-hook-command arg1
 
   # id can also be an exact match.
 - id: github.com/myorg/specific-repo
@@ -179,6 +183,21 @@ repos:
 ```
 See [Pre Workflow Hooks](pre-workflow-hooks.html) for more details on writing
 pre workflow hooks.
+
+### Running Scripts After Atlantis Workflows
+If you want to run scripts that would execute after Atlantis runs default or
+custom workflows, you can create a `post-workflow-hooks`:
+
+```yaml
+repos:
+  - id: /.*/
+    post_workflow_hooks:
+      - run: my custom command
+      - run: |
+          my bash script inline
+```
+See [Post Workflow Hooks](post-workflow-hooks.html) for more details on writing
+post workflow hooks.
 
 ### Change The Default Atlantis Workflow
 If you want to change the default commands that Atlantis runs during `plan` and `apply`

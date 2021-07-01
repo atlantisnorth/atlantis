@@ -19,15 +19,16 @@ type GlobalCfg struct {
 
 // Repo is the raw schema for repos in the server-side repo config.
 type Repo struct {
-	ID                        string            `yaml:"id" json:"id"`
-	Branch                    string            `yaml:"branch" json:"branch"`
-	ApplyRequirements         []string          `yaml:"apply_requirements" json:"apply_requirements"`
-	PreWorkflowHooks          []PreWorkflowHook `yaml:"pre_workflow_hooks" json:"pre_workflow_hooks"`
-	Workflow                  *string           `yaml:"workflow,omitempty" json:"workflow,omitempty"`
-	AllowedWorkflows          []string          `yaml:"allowed_workflows,omitempty" json:"allowed_workflows,omitempty"`
-	AllowedOverrides          []string          `yaml:"allowed_overrides" json:"allowed_overrides"`
-	AllowCustomWorkflows      *bool             `yaml:"allow_custom_workflows,omitempty" json:"allow_custom_workflows,omitempty"`
-	DeleteSourceBranchOnMerge *bool             `yaml:"delete_source_branch_on_merge,omitempty" json:"delete_source_branch_on_merge,omitempty"`
+	ID                        string         `yaml:"id" json:"id"`
+	Branch                    string         `yaml:"branch" json:"branch"`
+	ApplyRequirements         []string       `yaml:"apply_requirements" json:"apply_requirements"`
+	PreWorkflowHooks          []WorkflowHook `yaml:"pre_workflow_hooks" json:"pre_workflow_hooks"`
+	Workflow                  *string        `yaml:"workflow,omitempty" json:"workflow,omitempty"`
+	PostWorkflowHooks         []WorkflowHook `yaml:"post_workflow_hooks" json:"post_workflow_hooks"`
+	AllowedWorkflows          []string       `yaml:"allowed_workflows,omitempty" json:"allowed_workflows,omitempty"`
+	AllowedOverrides          []string       `yaml:"allowed_overrides" json:"allowed_overrides"`
+	AllowCustomWorkflows      *bool          `yaml:"allow_custom_workflows,omitempty" json:"allow_custom_workflows,omitempty"`
+	DeleteSourceBranchOnMerge *bool          `yaml:"delete_source_branch_on_merge,omitempty" json:"delete_source_branch_on_merge,omitempty"`
 }
 
 func (g GlobalCfg) Validate() error {
@@ -218,10 +219,17 @@ func (r Repo) ToValid(workflows map[string]valid.Workflow, globalApplyReqs []str
 		workflow = &ptr
 	}
 
-	var preWorkflowHooks []*valid.PreWorkflowHook
+	var preWorkflowHooks []*valid.WorkflowHook
 	if len(r.PreWorkflowHooks) > 0 {
 		for _, hook := range r.PreWorkflowHooks {
 			preWorkflowHooks = append(preWorkflowHooks, hook.ToValid())
+		}
+	}
+
+	var postWorkflowHooks []*valid.WorkflowHook
+	if len(r.PostWorkflowHooks) > 0 {
+		for _, hook := range r.PostWorkflowHooks {
+			postWorkflowHooks = append(postWorkflowHooks, hook.ToValid())
 		}
 	}
 
@@ -247,6 +255,7 @@ OUTER:
 		ApplyRequirements:         mergedApplyReqs,
 		PreWorkflowHooks:          preWorkflowHooks,
 		Workflow:                  workflow,
+		PostWorkflowHooks:         postWorkflowHooks,
 		AllowedWorkflows:          r.AllowedWorkflows,
 		AllowedOverrides:          r.AllowedOverrides,
 		AllowCustomWorkflows:      r.AllowCustomWorkflows,

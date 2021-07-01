@@ -32,7 +32,7 @@ func (w *DefaultPreWorkflowHooksCommandRunner) RunPreHooks(
 	user := ctx.User
 	log := ctx.Log
 
-	preWorkflowHooks := make([]*valid.PreWorkflowHook, 0)
+	preWorkflowHooks := make([]*valid.WorkflowHook, 0)
 	for _, repo := range w.GlobalCfg.Repos {
 		if repo.IDMatches(baseRepo.ID()) && repo.BranchMatches(pull.BaseBranch) && len(repo.PreWorkflowHooks) > 0 {
 			preWorkflowHooks = append(preWorkflowHooks, repo.PreWorkflowHooks...)
@@ -59,7 +59,7 @@ func (w *DefaultPreWorkflowHooksCommandRunner) RunPreHooks(
 	}
 
 	err = w.runHooks(
-		models.PreWorkflowHookCommandContext{
+		models.WorkflowHookCommandContext{
 			BaseRepo: baseRepo,
 			HeadRepo: headRepo,
 			Log:      log,
@@ -77,8 +77,8 @@ func (w *DefaultPreWorkflowHooksCommandRunner) RunPreHooks(
 }
 
 func (w *DefaultPreWorkflowHooksCommandRunner) runHooks(
-	ctx models.PreWorkflowHookCommandContext,
-	preWorkflowHooks []*valid.PreWorkflowHook,
+	ctx models.WorkflowHookCommandContext,
+	preWorkflowHooks []*valid.WorkflowHook,
 	repoDir string,
 ) error {
 

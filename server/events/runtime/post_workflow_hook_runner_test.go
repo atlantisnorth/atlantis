@@ -14,7 +14,7 @@ import (
 	. "github.com/runatlantis/atlantis/testing"
 )
 
-func TestPreWorkflowHookRunner_Run(t *testing.T) {
+func TestPostWorkflowHookRunner_Run(t *testing.T) {
 	cases := []struct {
 		Command string
 		ExpOut  string
@@ -70,7 +70,7 @@ func TestPreWorkflowHookRunner_Run(t *testing.T) {
 
 		logger := logging.NewNoopLogger(t)
 
-		r := runtime.DefaultPreWorkflowHookRunner{}
+		r := runtime.DefaultPostWorkflowHookRunner{}
 		t.Run(c.Command, func(t *testing.T) {
 			tmpDir, cleanup := TempDir(t)
 			defer cleanup()

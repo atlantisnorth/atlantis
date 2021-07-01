@@ -65,6 +65,7 @@ module.exports = {
                         'server-configuration',
                         'server-side-repo-config',
                         'pre-workflow-hooks',
+                        'post-workflow-hooks',
                         'policy-checking',
                         'custom-workflows',
                         'repo-level-atlantis-yaml',
