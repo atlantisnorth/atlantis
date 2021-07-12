@@ -62,6 +62,7 @@ const (
 	EnablePolicyChecksFlag     = "enable-policy-checks"
 	EnableRegExpCmdFlag        = "enable-regexp-cmd"
 	GHHostnameFlag             = "gh-hostname"
+	GHTeamAllowlistFlag        = "gh-team-allowlist"
 	GHTokenFlag                = "gh-token"
 	GHUserFlag                 = "gh-user"
 	GHAppIDFlag                = "gh-app-id"
@@ -109,6 +110,7 @@ const (
 	DefaultBitbucketBaseURL = bitbucketcloud.BaseURL
 	DefaultDataDir          = "~/.atlantis"
 	DefaultGHHostname       = "github.com"
+	DefaultGHTeamAllowlist  = "*:*"
 	DefaultGitlabHostname   = "gitlab.com"
 	DefaultLogLevel         = "info"
 	DefaultParallelPoolSize = 15
@@ -184,6 +186,18 @@ var stringFlags = map[string]stringFlag{
 	GHHostnameFlag: {
 		description:  "Hostname of your Github Enterprise installation. If using github.com, no need to set.",
 		defaultValue: DefaultGHHostname,
+	},
+	GHTeamAllowlistFlag: {
+		description: "Comma separated list of key-value pairs representing the GitHub teams and the operations that " +
+			"the members of a particular team are allowed to perform. " +
+			"The format is {team}:{command},{team}:{command}. " +
+			"Valid values for 'command' are 'plan', 'apply' and '*', e.g. 'dev:plan,ops:apply,devops:*'" +
+			"This example gives the users from the 'dev' GitHub team the permissions to execute the 'plan' command, " +
+			"the 'ops' team the permissions to execute the 'apply' command, " +
+			"and allows the 'devops' team to perform any operation. If this argument is not provided, the default value (*:*) " +
+			"will be used and the default behavior will be to not check permissions " +
+			"and to allow users from any team to perform any operation.",
+		defaultValue: DefaultGHTeamAllowlist,
 	},
 	GHUserFlag: {
 		description:  "GitHub username of API user.",
@@ -611,6 +625,9 @@ func (s *ServerCmd) setDefaults(c *server.UserConfig) {
 	}
 	if c.VCSStatusName == "" {
 		c.VCSStatusName = DefaultVCSStatusName
+	}
+	if c.GithubTeamAllowlist == "" {
+		c.GithubTeamAllowlist = DefaultGHTeamAllowlist
 	}
 	if c.TFEHostname == "" {
 		c.TFEHostname = DefaultTFEHostname

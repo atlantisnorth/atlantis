@@ -53,6 +53,9 @@ func (a *NotConfiguredVCSClient) MarkdownPullLink(pull models.PullRequest) (stri
 func (a *NotConfiguredVCSClient) err() error {
 	return fmt.Errorf("atlantis was not configured to support repos from %s", a.Host.String())
 }
+func (a *NotConfiguredVCSClient) GetTeamNamesForUser(repo models.Repo, user models.User) ([]string, error) {
+	return nil, a.err()
+}
 
 func (a *NotConfiguredVCSClient) SupportsSingleFileDownload(repo models.Repo) bool {
 	return false
