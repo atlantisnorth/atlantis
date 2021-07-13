@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"os"
 	"path/filepath"
 
 	version "github.com/hashicorp/go-version"
@@ -34,7 +33,7 @@ func (i *InitStepRunner) Run(ctx models.ProjectCommandContext, extraArgs []strin
 	terraformInitArgs = append(terraformInitArgs, "-no-color")
 
 	lockfilePath := filepath.Join(path, ".terraform.lock.hcl")
-	if MustConstraint("< 0.14.0").Check(tfVersion) || fileDoesNotExists(lockfilePath) {
+	if MustConstraint("< 0.14.0").Check(tfVersion) || !common.FileExists(lockfilePath) {
 		terraformInitArgs = append(terraformInitArgs, "-upgrade")
 	}
 
@@ -49,13 +48,4 @@ func (i *InitStepRunner) Run(ctx models.ProjectCommandContext, extraArgs []strin
 		return out, err
 	}
 	return "", nil
-}
-
-func fileDoesNotExists(name string) bool {
-	if _, err := os.Stat(name); err != nil {
-		if os.IsNotExist(err) {
-			return true
-		}
-	}
-	return false
 }

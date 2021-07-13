@@ -1,6 +1,9 @@
 package common
 
-import "strings"
+import (
+	"os"
+	"strings"
+)
 
 // Looks for any argument in commandArgs that has been overridden by an entry in extra args and replaces them
 // any extraArgs that are not used as overrides are added yo the end of the final string slice
@@ -51,6 +54,16 @@ func DeDuplicateExtraArgs(commandArgs []string, extraArgs []string) []string {
 		}
 	}
 	return finalArgs
+}
+
+// returns true if a file at the passed path exists
+func FileExists(path string) bool {
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
 }
 
 func stringInSlice(stringSlice []string, target string) bool {
