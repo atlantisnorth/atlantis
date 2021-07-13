@@ -171,6 +171,21 @@ func (mock *MockEventParsing) ParseGitlabMergeRequestEvent(event go_gitlab.Merge
 	return ret0, ret1, ret2, ret3, ret4, ret5
 }
 
+func (mock *MockEventParsing) ParseGitlabMergeRequestUpdateEvent(event go_gitlab.MergeEvent) models.PullRequestEventType {
+	if mock == nil {
+		panic("mock must not be nil. Use myMock := NewMockEventParsing().")
+	}
+	params := []pegomock.Param{event}
+	result := pegomock.GetGenericMockFrom(mock).Invoke("ParseGitlabMergeRequestUpdateEvent", params, []reflect.Type{reflect.TypeOf((*models.PullRequestEventType)(nil)).Elem()})
+	var ret0 models.PullRequestEventType
+	if len(result) != 0 {
+		if result[0] != nil {
+			ret0 = result[0].(models.PullRequestEventType)
+		}
+	}
+	return ret0
+}
+
 func (mock *MockEventParsing) ParseGitlabMergeRequestCommentEvent(event go_gitlab.MergeCommentEvent) (models.Repo, models.Repo, models.User, error) {
 	if mock == nil {
 		panic("mock must not be nil. Use myMock := NewMockEventParsing().")
@@ -618,6 +633,33 @@ func (c *MockEventParsing_ParseGitlabMergeRequestEvent_OngoingVerification) GetC
 }
 
 func (c *MockEventParsing_ParseGitlabMergeRequestEvent_OngoingVerification) GetAllCapturedArguments() (_param0 []go_gitlab.MergeEvent) {
+	params := pegomock.GetGenericMockFrom(c.mock).GetInvocationParams(c.methodInvocations)
+	if len(params) > 0 {
+		_param0 = make([]go_gitlab.MergeEvent, len(c.methodInvocations))
+		for u, param := range params[0] {
+			_param0[u] = param.(go_gitlab.MergeEvent)
+		}
+	}
+	return
+}
+
+func (verifier *VerifierMockEventParsing) ParseGitlabMergeRequestUpdateEvent(event go_gitlab.MergeEvent) *MockEventParsing_ParseGitlabMergeRequestUpdateEvent_OngoingVerification {
+	params := []pegomock.Param{event}
+	methodInvocations := pegomock.GetGenericMockFrom(verifier.mock).Verify(verifier.inOrderContext, verifier.invocationCountMatcher, "ParseGitlabMergeRequestUpdateEvent", params, verifier.timeout)
+	return &MockEventParsing_ParseGitlabMergeRequestUpdateEvent_OngoingVerification{mock: verifier.mock, methodInvocations: methodInvocations}
+}
+
+type MockEventParsing_ParseGitlabMergeRequestUpdateEvent_OngoingVerification struct {
+	mock              *MockEventParsing
+	methodInvocations []pegomock.MethodInvocation
+}
+
+func (c *MockEventParsing_ParseGitlabMergeRequestUpdateEvent_OngoingVerification) GetCapturedArguments() go_gitlab.MergeEvent {
+	event := c.GetAllCapturedArguments()
+	return event[len(event)-1]
+}
+
+func (c *MockEventParsing_ParseGitlabMergeRequestUpdateEvent_OngoingVerification) GetAllCapturedArguments() (_param0 []go_gitlab.MergeEvent) {
 	params := pegomock.GetGenericMockFrom(c.mock).GetInvocationParams(c.methodInvocations)
 	if len(params) > 0 {
 		_param0 = make([]go_gitlab.MergeEvent, len(c.methodInvocations))

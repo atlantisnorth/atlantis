@@ -1,0 +1,156 @@
+{
+  "object_kind": "merge_request",
+  "event_type": "merge_request",
+  "user": {
+    "name": "Quan Hoang",
+    "username": "quan.hoang",
+    "avatar_url": "https://gitlab.com/uploads/-/system/user/avatar/255/avatar.png",
+    "email": "hdquan@pm.me"
+  },
+  "project": {
+    "id": 910,
+    "name": "Test Gitlab Webhook",
+    "description": "",
+    "web_url": "https://gitlab.com/quan.hoang/atlantis-example",
+    "avatar_url": null,
+    "git_ssh_url": "git@gitlab.com:quan.hoang/atlantis-example.git",
+    "git_http_url": "https://gitlab.com/quan.hoang/atlantis-example.git",
+    "namespace": "Quan Hoang",
+    "visibility_level": 0,
+    "path_with_namespace": "quan.hoang/atlantis-example",
+    "default_branch": "master",
+    "ci_config_path": null,
+    "homepage": "https://gitlab.com/quan.hoang/atlantis-example",
+    "url": "git@gitlab.com:quan.hoang/atlantis-example.git",
+    "ssh_url": "git@gitlab.com:quan.hoang/atlantis-example.git",
+    "http_url": "https://gitlab.com/quan.hoang/atlantis-example.git"
+  },
+  "object_attributes": {
+    "assignee_id": 255,
+    "author_id": 255,
+    "created_at": "2020-12-08 04:04:23 UTC",
+    "description": "New description",
+    "head_pipeline_id": null,
+    "id": 41728,
+    "iid": 3,
+    "last_edited_at": "2020-12-08 04:05:16 UTC",
+    "last_edited_by_id": 255,
+    "merge_commit_sha": null,
+    "merge_error": null,
+    "merge_params": {
+      "force_remove_source_branch": "1"
+    },
+    "merge_status": "can_be_merged",
+    "merge_user_id": null,
+    "merge_when_pipeline_succeeds": false,
+    "milestone_id": null,
+    "source_branch": "get-event-payload",
+    "source_project_id": 910,
+    "state_id": 1,
+    "target_branch": "master",
+    "target_project_id": 910,
+    "time_estimate": 0,
+    "title": "Add new file",
+    "updated_at": "2020-12-08 04:05:58 UTC",
+    "updated_by_id": 255,
+    "url": "https://gitlab.com/quan.hoang/atlantis-example/-/merge_requests/3",
+    "source": {
+      "id": 910,
+      "name": "Test Gitlab Webhook",
+      "description": "",
+      "web_url": "https://gitlab.com/quan.hoang/atlantis-example",
+      "avatar_url": null,
+      "git_ssh_url": "git@gitlab.com:quan.hoang/atlantis-example.git",
+      "git_http_url": "https://gitlab.com/quan.hoang/atlantis-example.git",
+      "namespace": "Quan Hoang",
+      "visibility_level": 0,
+      "path_with_namespace": "quan.hoang/atlantis-example",
+      "default_branch": "master",
+      "ci_config_path": null,
+      "homepage": "https://gitlab.com/quan.hoang/atlantis-example",
+      "url": "git@gitlab.com:quan.hoang/atlantis-example.git",
+      "ssh_url": "git@gitlab.com:quan.hoang/atlantis-example.git",
+      "http_url": "https://gitlab.com/quan.hoang/atlantis-example.git"
+    },
+    "target": {
+      "id": 910,
+      "name": "Test Gitlab Webhook",
+      "description": "",
+      "web_url": "https://gitlab.com/quan.hoang/atlantis-example",
+      "avatar_url": null,
+      "git_ssh_url": "git@gitlab.com:quan.hoang/atlantis-example.git",
+      "git_http_url": "https://gitlab.com/quan.hoang/atlantis-example.git",
+      "namespace": "Quan Hoang",
+      "visibility_level": 0,
+      "path_with_namespace": "quan.hoang/atlantis-example",
+      "default_branch": "master",
+      "ci_config_path": null,
+      "homepage": "https://gitlab.com/quan.hoang/atlantis-example",
+      "url": "git@gitlab.com:quan.hoang/atlantis-example.git",
+      "ssh_url": "git@gitlab.com:quan.hoang/atlantis-example.git",
+      "http_url": "https://gitlab.com/quan.hoang/atlantis-example.git"
+    },
+    "last_commit": {
+      "id": "1ca7e340460796fe3eb17e2ea1b383ac4a1c95b7",
+      "message": "Add abc.txt\n",
+      "title": "Add abc.txt",
+      "timestamp": "2020-12-08T11:03:29+07:00",
+      "url": "https://gitlab.com/quan.hoang/atlantis-example/-/commit/1ca7e340460796fe3eb17e2ea1b383ac4a1c95b7",
+      "author": {
+        "name": "Quan Hoang",
+        "email": "hdquan@pm.me"
+      }
+    },
+    "work_in_progress": false,
+    "total_time_spent": 0,
+    "human_total_time_spent": null,
+    "human_time_estimate": null,
+    "assignee_ids": [
+      255,
+      19
+    ],
+    "state": "opened",
+    "action": "update"
+  },
+  "labels": [
+    {
+      "id": 340,
+      "title": "aaaa",
+      "color": "#0033CC",
+      "project_id": 910,
+      "created_at": "2020-12-08 04:05:34 UTC",
+      "updated_at": "2020-12-08 04:05:34 UTC",
+      "template": false,
+      "description": null,
+      "type": "ProjectLabel",
+      "group_id": null
+    }
+  ],
+  "changes": {
+    "assignees": {
+      "previous": [],
+      "current": [
+        {
+          "name": "Quan Hoang",
+          "username": "quan.hoang",
+          "avatar_url": "https://gitlab.com/uploads/-/system/user/avatar/255/avatar.png",
+          "email": "hdquan@pm.me"
+        }
+      ]
+    }
+  },
+  "repository": {
+    "name": "Test Gitlab Webhook",
+    "url": "git@gitlab.com:quan.hoang/atlantis-example.git",
+    "description": "",
+    "homepage": "https://gitlab.com/quan.hoang/atlantis-example"
+  },
+  "assignees": [
+    {
+      "name": "Quan Hoang",
+      "username": "quan.hoang",
+      "avatar_url": "https://gitlab.com/uploads/-/system/user/avatar/255/avatar.png",
+      "email": "hdquan@pm.me"
+    }
+  ]
+}

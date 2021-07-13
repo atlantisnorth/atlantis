@@ -429,6 +429,57 @@ func TestParseGitlabMergeEvent_Subgroup(t *testing.T) {
 	Equals(t, models.User{Username: "lkysow"}, actUser)
 }
 
+func TestParseGitlabMergeEvent_Update_ActionType(t *testing.T) {
+	cases := []struct {
+		filename string
+		exp      models.PullRequestEventType
+	}{
+		{
+			filename: "gitlab-merge-request-event-update-title.json",
+			exp:      models.OtherPullEvent,
+		},
+		{
+			filename: "gitlab-merge-request-event-update-new-commit.json",
+			exp:      models.UpdatedPullEvent,
+		},
+		{
+			filename: "gitlab-merge-request-event-update-labels.json",
+			exp:      models.OtherPullEvent,
+		},
+		{
+			filename: "gitlab-merge-request-event-update-description.json",
+			exp:      models.OtherPullEvent,
+		},
+		{
+			filename: "gitlab-merge-request-event-update-assignee.json",
+			exp:      models.OtherPullEvent,
+		},
+		{
+			filename: "gitlab-merge-request-event-update-mixed.json",
+			exp:      models.OtherPullEvent,
+		},
+		{
+			filename: "gitlab-merge-request-event-update-target-branch.json",
+			exp:      models.UpdatedPullEvent,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.filename, func(t *testing.T) {
+			path := filepath.Join("testdata", c.filename)
+			bytes, err := ioutil.ReadFile(path)
+			Ok(t, err)
+
+			var event *gitlab.MergeEvent
+			err = json.Unmarshal(bytes, &event)
+			Ok(t, err)
+			_, evType, _, _, _, err := parser.ParseGitlabMergeRequestEvent(*event)
+			Ok(t, err)
+			Equals(t, c.exp, evType)
+		})
+	}
+}
+
 func TestParseGitlabMergeEvent_ActionType(t *testing.T) {
 	cases := []struct {
 		action string
@@ -437,10 +488,6 @@ func TestParseGitlabMergeEvent_ActionType(t *testing.T) {
 		{
 			action: "open",
 			exp:    models.OpenedPullEvent,
-		},
-		{
-			action: "update",
-			exp:    models.UpdatedPullEvent,
 		},
 		{
 			action: "merge",

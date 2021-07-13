@@ -197,6 +197,12 @@ type EventParsing interface {
 		pull models.PullRequest, pullEventType models.PullRequestEventType,
 		baseRepo models.Repo, headRepo models.Repo, user models.User, err error)
 
+	// ParseGitlabMergeRequestUpdateEvent dives deeper into Gitlab merge request update events to check
+	// if Atlantis should handle events or not. Atlantis should ignore events which dont change the MR content
+	// We assume that 1 event carries multiple events, so firstly need to check for events triggering Atlantis planning
+	// Default 'unknown' event to 'models.UpdatedPullEvent'
+	ParseGitlabMergeRequestUpdateEvent(event gitlab.MergeEvent) models.PullRequestEventType
+
 	// ParseGitlabMergeRequestCommentEvent parses GitLab merge request comment
 	// events.
 	// baseRepo is the repo the merge request will be merged into.
@@ -537,6 +543,36 @@ func (e *EventParser) ParseGithubRepo(ghRepo *github.Repository) (models.Repo, e
 	return models.NewRepo(models.Github, ghRepo.GetFullName(), ghRepo.GetCloneURL(), e.GithubUser, e.GithubToken)
 }
 
+// ParseGitlabMergeRequestUpdateEvent dives deeper into Gitlab merge request update events
+func (e *EventParser) ParseGitlabMergeRequestUpdateEvent(event gitlab.MergeEvent) models.PullRequestEventType {
+	// New commit to opened MR
+	if len(event.ObjectAttributes.OldRev) > 0 {
+		return models.UpdatedPullEvent
+	}
+
+	// Update Assignee
+	if len(event.Changes.Assignees.Previous) > 0 || len(event.Changes.Assignees.Current) > 0 {
+		return models.OtherPullEvent
+	}
+
+	// Update Description
+	if len(event.Changes.Description.Previous) > 0 || len(event.Changes.Description.Current) > 0 {
+		return models.OtherPullEvent
+	}
+
+	// Update Labels
+	if len(event.Changes.Labels.Previous) > 0 || len(event.Changes.Labels.Current) > 0 {
+		return models.OtherPullEvent
+	}
+
+	//Update Title
+	if len(event.Changes.Title.Previous) > 0 || len(event.Changes.Title.Current) > 0 {
+		return models.OtherPullEvent
+	}
+
+	return models.UpdatedPullEvent
+}
+
 // ParseGitlabMergeRequestEvent parses GitLab merge request events.
 // pull is the parsed merge request.
 // See EventParsing for return value docs.
@@ -572,7 +608,7 @@ func (e *EventParser) ParseGitlabMergeRequestEvent(event gitlab.MergeEvent) (pul
 	case "open":
 		eventType = models.OpenedPullEvent
 	case "update":
-		eventType = models.UpdatedPullEvent
+		eventType = e.ParseGitlabMergeRequestUpdateEvent(event)
 	case "merge", "close":
 		eventType = models.ClosedPullEvent
 	default:
