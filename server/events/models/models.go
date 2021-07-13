@@ -93,9 +93,13 @@ func NewRepo(vcsHostType VCSHostType, repoFullName string, cloneURL string, vcsU
 	// and because the caller in that case actually constructs the clone url
 	// from the repo name and so there's no point checking if they match.
 	// Azure DevOps also does not require .git at the end of clone urls.
-	if vcsHostType != BitbucketServer && vcsHostType != AzureDevops {
-		expClonePath := fmt.Sprintf("/%s.git", repoFullName)
+	expClonePath := fmt.Sprintf("/%s.git", repoFullName)
+	if vcsHostType != BitbucketServer && vcsHostType != AzureDevops && vcsHostType != Gitlab {
 		if expClonePath != cloneURLParsed.Path {
+			return Repo{}, fmt.Errorf("expected clone url to have path %q but had %q", expClonePath, cloneURLParsed.Path)
+		}
+	} else if vcsHostType == Gitlab {
+		if !strings.Contains(cloneURL, expClonePath) {
 			return Repo{}, fmt.Errorf("expected clone url to have path %q but had %q", expClonePath, cloneURLParsed.Path)
 		}
 	}
