@@ -14,6 +14,7 @@ type UserConfig struct {
 	Automerge                  bool   `mapstructure:"automerge"`
 	AutoplanFileList           string `mapstructure:"autoplan-file-list"`
 	AzureDevopsToken           string `mapstructure:"azuredevops-token"`
+	AzureDevopsTransitionWorkItems *bool `mapstructure:"azuredevops-transition-work-items"`
 	AzureDevopsUser            string `mapstructure:"azuredevops-user"`
 	AzureDevopsWebhookPassword string `mapstructure:"azuredevops-webhook-password"`
 	AzureDevopsWebhookUser     string `mapstructure:"azuredevops-webhook-user"`
@@ -22,6 +23,7 @@ type UserConfig struct {
 	BitbucketUser              string `mapstructure:"bitbucket-user"`
 	BitbucketWebhookSecret     string `mapstructure:"bitbucket-webhook-secret"`
 	CheckoutStrategy           string `mapstructure:"checkout-strategy"`
+	DeleteSourceBranch         *bool   `mapstructure:"delete-source-branch"`
 	DataDir                    string `mapstructure:"data-dir"`
 	DisableApplyAll            bool   `mapstructure:"disable-apply-all"`
 	DisableApply               bool   `mapstructure:"disable-apply"`
@@ -76,6 +78,7 @@ type UserConfig struct {
 	SilenceWhitelistErrors bool            `mapstructure:"silence-whitelist-errors"`
 	SkipCloneNoChanges     bool            `mapstructure:"skip-clone-no-changes"`
 	SlackToken             string          `mapstructure:"slack-token"`
+	SquashMerge            *bool `mapstructure:"squash-merge"`
 	SSLCertFile            string          `mapstructure:"ssl-cert-file"`
 	SSLKeyFile             string          `mapstructure:"ssl-key-file"`
 	TFDownloadURL          string          `mapstructure:"tf-download-url"`

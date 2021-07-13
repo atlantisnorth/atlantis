@@ -60,6 +60,26 @@ func main() {
 	if repoName == "" {
 		repoName = "atlantis-tests"
 	}
+
+	deleteSourceBranch := os.Getenv("DELETE_SOURCE_BRANCH")
+	if deleteSourceBranch == "" {
+		deleteSourceBranch = false
+	} else {
+		deleteSourceBranch = true
+	}
+	squashMerge := os.Getenv("SQUASH_MERGE")
+	if squashMerge == "" {
+		squashMerge = false
+	} else {
+		squashMerge = true
+	}
+	transitionWorkItems := os.Getenv("ADO_TRANSITION_WORK_ITEMS")
+	if transitionWorkItems == "" {
+		transitionWorkItems = false
+	} else {
+		transitionWorkItems = true
+	}
+
 	// using https to clone the repo
 	repoURL := fmt.Sprintf("https://%s:%s@github.com/%s/%s.git", githubUsername, githubToken, ownerName, repoName)
 	cloneDirRoot := os.Getenv("CLONE_DIR")

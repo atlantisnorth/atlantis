@@ -311,17 +311,17 @@ func (g *AzureDevopsClient) MergePull(pull models.PullRequest, pullOptions model
 		ImageURL:   &imageURL,
 	}
 	// Set default pull request completion options
-	mcm := azuredevops.NoFastForward.String()
-	twi := new(bool)
-	*twi = true
+	true_var := new(bool)
+	*true_var = true
+	false_var := new(bool)
+	*false_var = false
 	completionOpts := azuredevops.GitPullRequestCompletionOptions{
 		BypassPolicy:            new(bool),
 		BypassReason:            azuredevops.String(""),
-		DeleteSourceBranch:      &pullOptions.DeleteSourceBranchOnMerge,
+		DeleteSourceBranch:      true_var,
 		MergeCommitMessage:      azuredevops.String(common.AutomergeCommitMsg),
-		MergeStrategy:           &mcm,
-		SquashMerge:             new(bool),
-		TransitionWorkItems:     twi,
+		SquashMerge:             true_var,
+		TransitionWorkItems:     false_var,
 		TriggeredByAutoComplete: new(bool),
 	}
 

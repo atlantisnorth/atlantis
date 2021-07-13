@@ -40,6 +40,7 @@ const (
 	ADWebhookPasswordFlag      = "azuredevops-webhook-password" // nolint: gosec
 	ADWebhookUserFlag          = "azuredevops-webhook-user"
 	ADTokenFlag                = "azuredevops-token" // nolint: gosec
+	ADTransitionWorkItemsFlag  = "azuredevops-transition-work-items"
 	ADUserFlag                 = "azuredevops-user"
 	AllowForkPRsFlag           = "allow-fork-prs"
 	AllowRepoConfigFlag        = "allow-repo-config"
@@ -53,6 +54,7 @@ const (
 	ConfigFlag                 = "config"
 	CheckoutStrategyFlag       = "checkout-strategy"
 	DataDirFlag                = "data-dir"
+	DeleteSourceBranchFlag     = "delete-source-branch"
 	DefaultTFVersionFlag       = "default-tf-version"
 	DisableApplyAllFlag        = "disable-apply-all"
 	DisableApplyFlag           = "disable-apply"
@@ -93,6 +95,7 @@ const (
 	SilenceWhitelistErrorsFlag = "silence-whitelist-errors"
 	SkipCloneNoChanges         = "skip-clone-no-changes"
 	SlackTokenFlag             = "slack-token"
+	SquashMergeFlag            = "squash-merge"
 	SSLCertFileFlag            = "ssl-cert-file"
 	SSLKeyFileFlag             = "ssl-key-file"
 	TFDownloadURLFlag          = "tf-download-url"
@@ -278,6 +281,10 @@ var stringFlags = map[string]stringFlag{
 }
 
 var boolFlags = map[string]boolFlag{
+	ADTransitionWorkItemsFlag: {
+		description:  "ADO. Should linked work items be transitioned to the next stage.",
+		defaultValue: false,
+	},
 	AllowForkPRsFlag: {
 		description:  "Allow Atlantis to run on pull requests from forks. A security issue for public repos.",
 		defaultValue: false,
@@ -291,6 +298,10 @@ var boolFlags = map[string]boolFlag{
 	},
 	AutomergeFlag: {
 		description:  "Automatically merge pull requests when all plans are successfully applied.",
+		defaultValue: false,
+	},
+	DeleteSourceBranchFlag: {
+		description:  "If set, will delete source branch on merge",
 		defaultValue: false,
 	},
 	DisableApplyAllFlag: {
@@ -341,6 +352,10 @@ var boolFlags = map[string]boolFlag{
 	},
 	SilenceForkPRErrorsFlag: {
 		description:  "Silences the posting of fork pull requests not allowed error comments.",
+		defaultValue: false,
+	},
+	SquashMergeFlag: {
+		description:  "Squash commits on merge",
 		defaultValue: false,
 	},
 	SilenceVCSStatusNoPlans: {
