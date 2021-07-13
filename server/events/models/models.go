@@ -490,6 +490,9 @@ func (p ProjectResult) IsSuccessful() bool {
 type PlanSuccess struct {
 	// TerraformOutput is the output from Terraform of running plan.
 	TerraformOutput string
+	// The last line of a successful terraform plan output that summarizes the changes
+	// e.g. Plan: 0 to add, 1 to change, 0 to destroy.
+	ChangeSummary string
 	// LockURL is the full URL to the lock held by this plan.
 	LockURL string
 	// RePlanCmd is the command that users should run to re-plan this project.

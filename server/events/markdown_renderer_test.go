@@ -148,6 +148,7 @@ func TestRenderProjectResults(t *testing.T) {
 				{
 					PlanSuccess: &models.PlanSuccess{
 						TerraformOutput: "terraform-output",
+						ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 						LockURL:         "lock-url",
 						RePlanCmd:       "atlantis plan -d path -w workspace",
 						ApplyCmd:        "atlantis apply -d path -w workspace",
@@ -183,6 +184,7 @@ $$$
 				{
 					PlanSuccess: &models.PlanSuccess{
 						TerraformOutput: "terraform-output",
+						ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 						LockURL:         "lock-url",
 						RePlanCmd:       "atlantis plan -d path -w workspace",
 						ApplyCmd:        "atlantis apply -d path -w workspace",
@@ -221,6 +223,7 @@ $$$
 				{
 					PlanSuccess: &models.PlanSuccess{
 						TerraformOutput: "terraform-output",
+						ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 						LockURL:         "lock-url",
 						RePlanCmd:       "atlantis plan -d path -w workspace",
 						ApplyCmd:        "atlantis apply -d path -w workspace",
@@ -334,6 +337,7 @@ $$$
 					RepoRelDir: "path",
 					PlanSuccess: &models.PlanSuccess{
 						TerraformOutput: "terraform-output",
+						ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 						LockURL:         "lock-url",
 						ApplyCmd:        "atlantis apply -d path -w workspace",
 						RePlanCmd:       "atlantis plan -d path -w workspace",
@@ -344,6 +348,7 @@ $$$
 					RepoRelDir:  "path2",
 					ProjectName: "projectname",
 					PlanSuccess: &models.PlanSuccess{
+						ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 						TerraformOutput: "terraform-output2",
 						LockURL:         "lock-url2",
 						ApplyCmd:        "atlantis apply -d path2 -w workspace",
@@ -532,6 +537,7 @@ $$$
 					RepoRelDir: "path",
 					PlanSuccess: &models.PlanSuccess{
 						TerraformOutput: "terraform-output",
+						ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 						LockURL:         "lock-url",
 						ApplyCmd:        "atlantis apply -d path -w workspace",
 						RePlanCmd:       "atlantis plan -d path -w workspace",
@@ -782,6 +788,7 @@ func TestRenderProjectResultsDisableApplyAll(t *testing.T) {
 				{
 					PlanSuccess: &models.PlanSuccess{
 						TerraformOutput: "terraform-output",
+						ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 						LockURL:         "lock-url",
 						RePlanCmd:       "atlantis plan -d path -w workspace",
 						ApplyCmd:        "atlantis apply -d path -w workspace",
@@ -813,6 +820,7 @@ $$$
 				{
 					PlanSuccess: &models.PlanSuccess{
 						TerraformOutput: "terraform-output",
+						ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 						LockURL:         "lock-url",
 						RePlanCmd:       "atlantis plan -d path -w workspace",
 						ApplyCmd:        "atlantis apply -d path -w workspace",
@@ -847,6 +855,7 @@ $$$
 					RepoRelDir: "path",
 					PlanSuccess: &models.PlanSuccess{
 						TerraformOutput: "terraform-output",
+						ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 						LockURL:         "lock-url",
 						ApplyCmd:        "atlantis apply -d path -w workspace",
 						RePlanCmd:       "atlantis plan -d path -w workspace",
@@ -858,6 +867,7 @@ $$$
 					ProjectName: "projectname",
 					PlanSuccess: &models.PlanSuccess{
 						TerraformOutput: "terraform-output2",
+						ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 						LockURL:         "lock-url2",
 						ApplyCmd:        "atlantis apply -d path2 -w workspace",
 						RePlanCmd:       "atlantis plan -d path2 -w workspace",
@@ -1274,6 +1284,7 @@ func TestRenderProjectResults_WrapSingleProject(t *testing.T) {
 							Workspace:  "default",
 							PlanSuccess: &models.PlanSuccess{
 								TerraformOutput: c.Output,
+								ChangeSummary: "Plan: 1 to add, 2 to change, 3 to destroy.",
 								LockURL:         "lock-url",
 								RePlanCmd:       "replancmd",
 								ApplyCmd:        "applycmd",
@@ -1297,6 +1308,7 @@ func TestRenderProjectResults_WrapSingleProject(t *testing.T) {
 						if c.ShouldWrap {
 							exp = `Ran Plan for dir: $.$ workspace: $default$
 
+` + "Change Summary: `Plan: 1 to add, 2 to change, 3 to destroy.`" + `
 <details><summary>Show Output</summary>
 
 $$$diff
@@ -1423,6 +1435,7 @@ func TestRenderProjectResults_MultiProjectPlanWrapped(t *testing.T) {
 				Workspace:  "staging",
 				PlanSuccess: &models.PlanSuccess{
 					TerraformOutput: tfOut,
+					ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 					LockURL:         "staging-lock-url",
 					ApplyCmd:        "staging-apply-cmd",
 					RePlanCmd:       "staging-replan-cmd",
@@ -1433,6 +1446,7 @@ func TestRenderProjectResults_MultiProjectPlanWrapped(t *testing.T) {
 				Workspace:  "production",
 				PlanSuccess: &models.PlanSuccess{
 					TerraformOutput: tfOut,
+					ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 					LockURL:         "production-lock-url",
 					ApplyCmd:        "production-apply-cmd",
 					RePlanCmd:       "production-replan-cmd",
@@ -1446,6 +1460,7 @@ func TestRenderProjectResults_MultiProjectPlanWrapped(t *testing.T) {
 1. dir: $.$ workspace: $production$
 
 ### 1. dir: $.$ workspace: $staging$
+` + "Change Summary: `Plan: 1 to add, 2 to change, 3 to destroy.`" + `
 <details><summary>Show Output</summary>
 
 $$$diff
@@ -1462,6 +1477,7 @@ Plan: 1 to add, 0 to change, 0 to destroy.
 
 ---
 ### 2. dir: $.$ workspace: $production$
+` + "Change Summary: `Plan: 1 to add, 2 to change, 3 to destroy.`" + `
 <details><summary>Show Output</summary>
 
 $$$diff
@@ -1555,6 +1571,7 @@ func TestRenderProjectResults_PlansDeleted(t *testing.T) {
 						Workspace:  "production",
 						PlanSuccess: &models.PlanSuccess{
 							TerraformOutput: "tf out",
+							ChangeSummary:   "Plan: 1 to add, 2 to change, 3 to destroy.",
 							LockURL:         "lock-url",
 							RePlanCmd:       "re-plan cmd",
 							ApplyCmd:        "apply cmd",

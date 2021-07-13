@@ -305,7 +305,7 @@ var planSuccessUnwrappedTmpl = template.Must(template.New("").Parse(
 		"{{ if .HasDiverged }}\n\n:warning: The branch we're merging into is ahead, it is recommended to pull new commits first.{{end}}"))
 
 var planSuccessWrappedTmpl = template.Must(template.New("").Parse(
-	"<details><summary>Show Output</summary>\n\n" +
+	"Change Summary: `{{.ChangeSummary}}`\n<details><summary>Show Output</summary>\n\n" +
 		"```diff\n" +
 		"{{.TerraformOutput}}\n" +
 		"```\n\n" +
