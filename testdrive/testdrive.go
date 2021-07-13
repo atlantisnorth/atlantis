@@ -125,7 +125,7 @@ Follow these instructions to create a token (we don't store any tokens):
 	colorstring.Println("[green]=> fork completed![reset]")
 
 	// Detect terraform and install it if not installed.
-	_, err := exec.LookPath("terraform")
+	terraformPath, err := exec.LookPath("terraform")
 	if err != nil {
 		colorstring.Println("[yellow]=> terraform not found in $PATH.[reset]")
 		colorstring.Println("=> downloading terraform ")
@@ -143,18 +143,25 @@ Follow these instructions to create a token (we don't store any tokens):
 		}
 		colorstring.Println("[green]=> installed terraform successfully at /usr/local/bin[reset]")
 	} else {
-		colorstring.Println("[green]=> terraform found in $PATH![reset]")
+		colorstring.Printf("[green]=> terraform found in $PATH at %s\n[reset]", terraformPath)
 	}
 
-	// Download ngrok.
-	colorstring.Println("=> downloading ngrok  ")
-	s.Start()
-	ngrokURL := fmt.Sprintf("%s/ngrok-stable-%s-%s.zip", ngrokDownloadURL, runtime.GOOS, runtime.GOARCH)
-	if err = downloadAndUnzip(ngrokURL, "/tmp/ngrok.zip", "/tmp"); err != nil {
-		return errors.Wrapf(err, "downloading and unzipping ngrok")
+	// Detect ngrok and install it if not installed
+	ngrokPath, ngrokErr := exec.LookPath("ngrok")
+	if ngrokErr != nil {
+		colorstring.Println("[yellow]=> ngrok not found in $PATH.[reset]")
+		colorstring.Println("=> downloading ngrok")
+		s.Start()
+		ngrokURL := fmt.Sprintf("%s/ngrok-stable-%s-%s.zip", ngrokDownloadURL, runtime.GOOS, runtime.GOARCH)
+		if err = downloadAndUnzip(ngrokURL, "/tmp/ngrok.zip", "/tmp"); err != nil {
+			return errors.Wrapf(err, "downloading and unzipping ngrok")
+		}
+		s.Stop()
+		colorstring.Println("[green]=> downloaded ngrok successfully![reset]")
+		ngrokPath = "/tmp/ngrok"
+	} else {
+		colorstring.Printf("[green]=> ngrok found in $PATH at %s\n[reset]", ngrokPath)
 	}
-	s.Stop()
-	colorstring.Println("[green]=> downloaded ngrok successfully![reset]")
 
 	// Create ngrok tunnel.
 	colorstring.Println("=> creating secure tunnel")
@@ -189,7 +196,7 @@ tunnels:
 	tunnelReadyLog := regexp.MustCompile("client session established")
 	tunnelTimeout := 20 * time.Second
 	cancelNgrok, ngrokErrors, err := execAndWaitForStderr(&wg, tunnelReadyLog, tunnelTimeout,
-		"/tmp/ngrok", "start", "atlantis", "--config", ngrokConfigFile.Name(), "--log", "stderr", "--log-format", "term")
+		ngrokPath, "start", "atlantis", "--config", ngrokConfigFile.Name(), "--log", "stderr", "--log-format", "term")
 	// Check if we got a fast error. Move on if we haven't (the command is still running).
 	if err != nil {
 		s.Stop()
