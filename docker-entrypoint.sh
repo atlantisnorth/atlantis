@@ -3,6 +3,14 @@ set -e
 
 # Modified: https://github.com/hashicorp/docker-consul/blob/2c2873f9d619220d1eef0bc46ec78443f55a10b5/0.X/docker-entrypoint.sh
 
+# https://github.com/runatlantis/helm-charts/issues/14
+if [ -d /atlantis-data -a "$(stat -c %U:%G /atlantis-data 2>/dev/null)" != atlantis:atlantis ]; then
+    echo "docker-entrypoint.sh: detected /atlantis-data wrong filesystem permissions" >&2
+    echo "currently owned by $(stat -c %U:%G /atlantis-data 2>/dev/null), changing to atlantis:atlantis..." >&2
+    chown -R atlantis:atlantis /atlantis-data
+    echo "docker-entrypoint.sh: finished changing /atlantis-data filesystem permissions" >&2
+fi
+
 # If the user is trying to run atlantis directly with some arguments, then
 # pass them to atlantis.
 if [ "${1:0:1}" = '-' ]; then
