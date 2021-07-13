@@ -6,7 +6,7 @@ import (
 
 // DefaultAutoPlanWhenModified is the default element in the when_modified
 // list if none is defined.
-var DefaultAutoPlanWhenModified = []string{"**/*.tf*", "**/terragrunt.hcl"}
+var DefaultAutoPlanWhenModified = []string{"**/*.tf*", "**/*.hcl"}
 
 type Autoplan struct {
 	WhenModified []string `yaml:"when_modified,omitempty"`
