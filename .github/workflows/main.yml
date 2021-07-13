@@ -1,0 +1,25 @@
+name: test
+
+on:
+  push:
+    branches:
+      - 'master'
+  pull_request:
+    branches:
+      - 'master'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-go@v2.1.3
+      with:
+        go-version: 1.16
+    - uses: artis3n/setup-conftest@v0
+      with:
+        conftest_version: 0.25.0
+    - name: test
+      run: |
+        make test-all
+        make check-fmt
