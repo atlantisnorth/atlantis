@@ -45,6 +45,10 @@ RUN apk add --no-cache ca-certificates gnupg curl git git-lfs unzip bash openssh
         rm -rf /root/.gnupg && \
         rm -rf /var/cache/apk/*
 
+# Install dependencies for atlantis
+RUN apk add --no-cache libc6-compat && \
+  rm -rf /var/cache/apk/*
+
 # Set up nsswitch.conf for Go's "netgo" implementation
 # - https://github.com/golang/go/blob/go1.9.1/src/net/conf.go#L194-L275
 RUN [ ! -e /etc/nsswitch.conf ] && echo 'hosts: files dns' > /etc/nsswitch.conf
