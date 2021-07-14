@@ -128,6 +128,7 @@ func setup(t *testing.T) *vcsmocks.MockClient {
 		parallelPoolSize,
 		SilenceNoProjects,
 		defaultBoltDB,
+		deleteLockCommand,
 	)
 
 	applyCommandRunner = events.NewApplyCommandRunner(
@@ -440,9 +441,77 @@ func TestRunUnlockCommandFail_VCSComment(t *testing.T) {
 	vcsClient.VerifyWasCalledOnce().CreateComment(fixtures.GithubRepo, fixtures.Pull.Num, "Failed to delete PR locks", "unlock")
 }
 
+func TestRunAutoplanCommand_DeleteLocksByPull(t *testing.T) {
+	setup(t)
+	tmp, cleanup := TempDir(t)
+	defer cleanup()
+	boltDB, err := db.New(tmp)
+	Ok(t, err)
+	dbUpdater.DB = boltDB
+	applyCommandRunner.DB = boltDB
+	autoMerger.GlobalAutomerge = true
+	defer func() { autoMerger.GlobalAutomerge = false }()
+
+	When(projectCommandBuilder.BuildAutoplanCommands(matchers.AnyPtrToEventsCommandContext())).
+		ThenReturn([]models.ProjectCommandContext{
+			{
+				CommandName: models.PlanCommand,
+			},
+			{
+				CommandName: models.PlanCommand,
+			},
+		}, nil)
+	When(projectCommandRunner.Plan(matchers.AnyModelsProjectCommandContext())).ThenReturn(models.ProjectResult{PlanSuccess: &models.PlanSuccess{}})
+	When(workingDir.GetPullDir(matchers.AnyModelsRepo(), matchers.AnyModelsPullRequest())).ThenReturn(tmp, nil)
+	fixtures.Pull.BaseRepo = fixtures.GithubRepo
+	ch.RunAutoplanCommand(fixtures.GithubRepo, fixtures.GithubRepo, fixtures.Pull, fixtures.User)
+	deleteLockCommand.VerifyWasCalledOnce().DeleteLocksByPull(fixtures.Pull.BaseRepo.FullName, fixtures.Pull.Num)
+}
+
+func TestRunGenericPlanCommand_DeleteLocksByPull(t *testing.T) {
+	setup(t)
+	tmp, cleanup := TempDir(t)
+	defer cleanup()
+	boltDB, err := db.New(tmp)
+	Ok(t, err)
+	dbUpdater.DB = boltDB
+	applyCommandRunner.DB = boltDB
+	autoMerger.GlobalAutomerge = true
+	defer func() { autoMerger.GlobalAutomerge = false }()
+
+	When(projectCommandRunner.Plan(matchers.AnyModelsProjectCommandContext())).ThenReturn(models.ProjectResult{PlanSuccess: &models.PlanSuccess{}})
+	When(workingDir.GetPullDir(matchers.AnyModelsRepo(), matchers.AnyModelsPullRequest())).ThenReturn(tmp, nil)
+	pull := &github.PullRequest{State: github.String("open")}
+	modelPull := models.PullRequest{BaseRepo: fixtures.GithubRepo, State: models.OpenPullState, Num: fixtures.Pull.Num}
+	When(githubGetter.GetPullRequest(fixtures.GithubRepo, fixtures.Pull.Num)).ThenReturn(pull, nil)
+	When(eventParsing.ParseGithubPull(pull)).ThenReturn(modelPull, modelPull.BaseRepo, fixtures.GithubRepo, nil)
+
+	fixtures.Pull.BaseRepo = fixtures.GithubRepo
+	ch.RunCommentCommand(fixtures.GithubRepo, nil, nil, fixtures.User, fixtures.Pull.Num, &events.CommentCommand{Name: models.PlanCommand})
+	deleteLockCommand.VerifyWasCalledOnce().DeleteLocksByPull(fixtures.Pull.BaseRepo.FullName, fixtures.Pull.Num)
+}
+
+func TestRunSpecificPlanCommandDoesnt_DeleteLocksByPull(t *testing.T) {
+	setup(t)
+	tmp, cleanup := TempDir(t)
+	defer cleanup()
+	boltDB, err := db.New(tmp)
+	Ok(t, err)
+	dbUpdater.DB = boltDB
+	applyCommandRunner.DB = boltDB
+	autoMerger.GlobalAutomerge = true
+	defer func() { autoMerger.GlobalAutomerge = false }()
+
+	When(projectCommandRunner.Plan(matchers.AnyModelsProjectCommandContext())).ThenReturn(models.ProjectResult{PlanSuccess: &models.PlanSuccess{}})
+	When(workingDir.GetPullDir(matchers.AnyModelsRepo(), matchers.AnyModelsPullRequest())).ThenReturn(tmp, nil)
+	fixtures.Pull.BaseRepo = fixtures.GithubRepo
+	ch.RunCommentCommand(fixtures.GithubRepo, nil, nil, fixtures.User, fixtures.Pull.Num, &events.CommentCommand{Name: models.PlanCommand, ProjectName: "default"})
+	deleteLockCommand.VerifyWasCalled(Never()).DeleteLocksByPull(fixtures.Pull.BaseRepo.FullName, fixtures.Pull.Num)
+}
+
 // Test that if one plan fails and we are using automerge, that
 // we delete the plans.
-func TestRunAutoplanCommand_DeletePlans(t *testing.T) {
+func TestRunAutoplanCommandWithError_DeletePlans(t *testing.T) {
 	setup(t)
 	tmp, cleanup := TempDir(t)
 	defer cleanup()
@@ -485,6 +554,7 @@ func TestRunAutoplanCommand_DeletePlans(t *testing.T) {
 		ThenReturn(tmp, nil)
 	fixtures.Pull.BaseRepo = fixtures.GithubRepo
 	ch.RunAutoplanCommand(fixtures.GithubRepo, fixtures.GithubRepo, fixtures.Pull, fixtures.User)
+	// gets called twice: the first time before the plan starts, the second time after the plan errors
 	pendingPlanFinder.VerifyWasCalledOnce().DeletePlans(tmp)
 }
 
