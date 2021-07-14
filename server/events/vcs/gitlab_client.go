@@ -14,11 +14,13 @@
 package vcs
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/runatlantis/atlantis/server/events/yaml"
 
@@ -167,11 +169,9 @@ func (g *GitlabClient) PullIsApproved(repo models.Repo, pull models.PullRequest)
 // PullIsMergeable returns true if the merge request can be merged.
 // In GitLab, there isn't a single field that tells us if the pull request is
 // mergeable so for now we check the merge_status and approvals_before_merge
-// fields. We aren't checking if there are unresolved discussions or failing
-// pipelines because those only block merges if the repo is set to require that.
+// fields.
 // In order to check if the repo required these, we'd need to make another API
-// call to get the repo settings. For now I'm going to leave this as is and if
-// some users require checking this as well then we can revisit.
+// call to get the repo settings.
 // It's also possible that GitLab implements their own "mergeable" field in
 // their API in the future.
 // See:
@@ -182,7 +182,33 @@ func (g *GitlabClient) PullIsMergeable(repo models.Repo, pull models.PullRequest
 	if err != nil {
 		return false, err
 	}
-	if mr.MergeStatus == "can_be_merged" && mr.ApprovalsBeforeMerge <= 0 {
+
+	// Get project configuration
+	project, _, err2 := g.Client.Projects.GetProject(mr.ProjectID, nil)
+	if err2 != nil {
+		return false, err2
+	}
+
+	// Get Commit Statuses
+	statuses, _, err3 := g.Client.Commits.GetCommitStatuses(mr.ProjectID, mr.HeadPipeline.SHA, nil)
+	if err3 != nil {
+		return false, err3
+	}
+
+	for _, status := range statuses {
+		if !strings.HasSuffix(status.Name, fmt.Sprintf("/%s", models.ApplyCommand.String())) {
+			if !status.AllowFailure && project.OnlyAllowMergeIfPipelineSucceeds && status.Status != "success" {
+				return false, nil
+			}
+		}
+	}
+
+	isPipelineSkipped := mr.HeadPipeline.Status == "skipped"
+	allowSkippedPipeline := project.AllowMergeOnSkippedPipeline && isPipelineSkipped
+	if mr.MergeStatus == "can_be_merged" &&
+		mr.ApprovalsBeforeMerge <= 0 &&
+		mr.BlockingDiscussionsResolved &&
+		(allowSkippedPipeline || !isPipelineSkipped) {
 		return true, nil
 	}
 	return false, nil
@@ -213,17 +239,55 @@ func (g *GitlabClient) GetMergeRequest(repoFullName string, pullNum int) (*gitla
 	return mr, err
 }
 
+func (g *GitlabClient) WaitForSuccessPipeline(ctx context.Context, pull models.PullRequest) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	for wait := true; wait; {
+		select {
+		case <-ctx.Done():
+			// validation check time out
+			cancel()
+			return //ctx.Err()
+
+		default:
+			mr, _ := g.GetMergeRequest(pull.BaseRepo.FullName, pull.Num)
+			// check if pipeline has a success state to merge
+			if mr.HeadPipeline.Status == "success" {
+				return
+			}
+			time.Sleep(time.Second)
+		}
+	}
+}
+
 // MergePull merges the merge request.
 func (g *GitlabClient) MergePull(pull models.PullRequest, pullOptions models.PullRequestOptions) error {
 	commitMsg := common.AutomergeCommitMsg
-	_, _, err := g.Client.MergeRequests.AcceptMergeRequest(
+
+	mr, err := g.GetMergeRequest(pull.BaseRepo.FullName, pull.Num)
+	if err != nil {
+		return errors.Wrap(
+			err, "unable to merge merge request, it was not possible to retrieve the merge request")
+	}
+	project, _, err2 := g.Client.Projects.GetProject(mr.ProjectID, nil)
+	if err2 != nil {
+		return errors.Wrap(
+			err2, "unable to merge merge request, it was not possible to check the project requirements")
+	}
+
+	if project != nil && project.OnlyAllowMergeIfPipelineSucceeds {
+		g.WaitForSuccessPipeline(context.Background(), pull)
+	}
+
+	_, _, err3 := g.Client.MergeRequests.AcceptMergeRequest(
 		pull.BaseRepo.FullName,
 		pull.Num,
 		&gitlab.AcceptMergeRequestOptions{
 			MergeCommitMessage:       &commitMsg,
 			ShouldRemoveSourceBranch: &pullOptions.DeleteSourceBranchOnMerge,
 		})
-	return errors.Wrap(err, "unable to merge merge request, it may not be in a mergeable state")
+	return errors.Wrap(err3, "unable to merge merge request, it may not be in a mergeable state")
 }
 
 // MarkdownPullLink specifies the string used in a pull request comment to reference another pull request.

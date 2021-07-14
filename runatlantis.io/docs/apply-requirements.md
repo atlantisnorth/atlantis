@@ -107,12 +107,11 @@ a pull request mergeable.
 :::
 
 #### GitLab
-For GitLab, a merge request will be mergeable if it has no conflicts and if all
-required approvers have approved the pull request.
+For GitLab, a merge request will be merged if there are no conflicts, no unresolved discussions if it is a project requirement and if all necessary approvers have approved the pull request.
 
-We **do not** check if there are [Unresolved Discussions](https://docs.gitlab.com/ee/user/discussions/#resolve-a-thread) because GitLab doesn't
-provide that information in their API response. If you need this feature please
-[open an issue](https://github.com/runatlantis/atlantis/issues/new).
+For pipelines, if the project requires that pipelines must succeed, all builds except the apply command status will be checked.
+
+For Jobs with allow_failure setting set to true, will be ignored. If the pipeline has been skipped and the project allows merging, it will be marked as mergeable.
 
 #### Bitbucket.org (Bitbucket Cloud) and Bitbucket Server (Stash)
 For Bitbucket, we just check if there is a conflict that is preventing a
