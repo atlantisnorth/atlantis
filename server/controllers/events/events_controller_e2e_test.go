@@ -824,6 +824,7 @@ func setupE2E(t *testing.T, repoDir string) (events_controllers.VCSEventsControl
 		parallelPoolSize,
 		silenceNoProjects,
 		boltdb,
+		lockingClient,
 	)
 
 	applyCommandRunner := events.NewApplyCommandRunner(

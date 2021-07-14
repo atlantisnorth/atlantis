@@ -1,6 +1,7 @@
 package events
 
 import (
+	"github.com/runatlantis/atlantis/server/core/locking"
 	"github.com/runatlantis/atlantis/server/events/models"
 	"github.com/runatlantis/atlantis/server/events/vcs"
 )
@@ -21,6 +22,7 @@ func NewPlanCommandRunner(
 	parallelPoolSize int,
 	SilenceNoProjects bool,
 	pullStatusFetcher PullStatusFetcher,
+	locker locking.Locker,
 ) *PlanCommandRunner {
 	return &PlanCommandRunner{
 		silenceVCSStatusNoPlans:    silenceVCSStatusNoPlans,
@@ -38,6 +40,7 @@ func NewPlanCommandRunner(
 		parallelPoolSize:           parallelPoolSize,
 		SilenceNoProjects:          SilenceNoProjects,
 		pullStatusFetcher:          pullStatusFetcher,
+		locker:                     locker,
 	}
 }
 
@@ -63,6 +66,7 @@ type PlanCommandRunner struct {
 	autoMerger                 *AutoMerger
 	parallelPoolSize           int
 	pullStatusFetcher          PullStatusFetcher
+	locker                     locking.Locker
 }
 
 func (p *PlanCommandRunner) runAutoplan(ctx *CommandContext) {
@@ -103,6 +107,14 @@ func (p *PlanCommandRunner) runAutoplan(ctx *CommandContext) {
 	// At this point we are sure Atlantis has work to do, so set commit status to pending
 	if err := p.commitStatusUpdater.UpdateCombined(ctx.Pull.BaseRepo, ctx.Pull, models.PendingCommitStatus, models.PlanCommand); err != nil {
 		ctx.Log.Warn("unable to update commit status: %s", err)
+	}
+
+	// discard previous plans that might not be relevant anymore
+	ctx.Log.Debug("deleting previous plans and locks")
+	p.deletePlans(ctx)
+	_, err = p.locker.UnlockByPull(baseRepo.FullName, pull.Num)
+	if err != nil {
+		ctx.Log.Err("deleting locks: %s", err)
 	}
 
 	// Only run commands in parallel if enabled
@@ -178,6 +190,17 @@ func (p *PlanCommandRunner) run(ctx *CommandContext, cmd *CommentCommand) {
 	}
 
 	projectCmds, policyCheckCmds := p.partitionProjectCmds(ctx, projectCmds)
+
+	// if the plan is generic, new plans will be generated based on changes
+	// discard previous plans that might not be relevant anymore
+	if !cmd.IsForSpecificProject() {
+		ctx.Log.Debug("deleting previous plans and locks")
+		p.deletePlans(ctx)
+		_, err = p.locker.UnlockByPull(baseRepo.FullName, pull.Num)
+		if err != nil {
+			ctx.Log.Err("deleting locks: %s", err)
+		}
+	}
 
 	// Only run commands in parallel if enabled
 	var result CommandResult
