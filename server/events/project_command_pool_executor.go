@@ -17,7 +17,7 @@ func runProjectCmdsParallel(
 	var results []models.ProjectResult
 	mux := &sync.Mutex{}
 
-	wg := sizedwaitgroup.New(15)
+	wg := sizedwaitgroup.New(poolSize)
 	for _, pCmd := range cmds {
 		pCmd := pCmd
 		var execute func()
