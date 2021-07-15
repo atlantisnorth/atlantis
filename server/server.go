@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -156,10 +157,22 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 				User:  userConfig.GithubUser,
 				Token: userConfig.GithubToken,
 			}
-		} else if userConfig.GithubAppID != 0 {
+		} else if userConfig.GithubAppID != 0 && userConfig.GithubAppKeyFile != "" {
+			privateKey, err := ioutil.ReadFile(userConfig.GithubAppKeyFile)
+			if err != nil {
+				return nil, err
+			}
 			githubCredentials = &vcs.GithubAppCredentials{
 				AppID:    userConfig.GithubAppID,
-				KeyPath:  userConfig.GithubAppKey,
+				Key:      privateKey,
+				Hostname: userConfig.GithubHostname,
+				AppSlug:  userConfig.GithubAppSlug,
+			}
+			githubAppEnabled = true
+		} else if userConfig.GithubAppID != 0 && userConfig.GithubAppKey != "" {
+			githubCredentials = &vcs.GithubAppCredentials{
+				AppID:    userConfig.GithubAppID,
+				Key:      []byte(userConfig.GithubAppKey),
 				Hostname: userConfig.GithubHostname,
 				AppSlug:  userConfig.GithubAppSlug,
 			}

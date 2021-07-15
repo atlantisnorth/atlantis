@@ -75,6 +75,7 @@ var testFlags = map[string]interface{}{
 	GHTokenFlag:                "token",
 	GHUserFlag:                 "user",
 	GHAppIDFlag:                int64(0),
+	GHAppKeyFlag:               "",
 	GHAppKeyFileFlag:           "",
 	GHAppSlugFlag:              "atlantis",
 	GHOrganizationFlag:         "",
@@ -350,7 +351,7 @@ func TestExecute_ValidateSSLConfig(t *testing.T) {
 }
 
 func TestExecute_ValidateVCSConfig(t *testing.T) {
-	expErr := "--gh-user/--gh-token or --gh-app-id/--gh-app-key-file or --gitlab-user/--gitlab-token or --bitbucket-user/--bitbucket-token or --azuredevops-user/--azuredevops-token must be set"
+	expErr := "--gh-user/--gh-token or --gh-app-id/--gh-app-key-file or --gh-app-id/--gh-app-key or --gitlab-user/--gitlab-token or --bitbucket-user/--bitbucket-token or --azuredevops-user/--azuredevops-token must be set"
 	cases := []struct {
 		description string
 		flags       map[string]interface{}
@@ -404,9 +405,16 @@ func TestExecute_ValidateVCSConfig(t *testing.T) {
 			true,
 		},
 		{
-			"just github app key set",
+			"just github app key file set",
 			map[string]interface{}{
 				GHAppKeyFileFlag: "key.pem",
+			},
+			true,
+		},
+		{
+			"just github app key set",
+			map[string]interface{}{
+				GHAppKeyFlag: "-----BEGIN RSA PRIVATE KEY-----",
 			},
 			true,
 		},
@@ -464,10 +472,18 @@ func TestExecute_ValidateVCSConfig(t *testing.T) {
 			false,
 		},
 		{
-			"github app and key set and should be successful",
+			"github app and key file set and should be successful",
 			map[string]interface{}{
 				GHAppIDFlag:      "1",
 				GHAppKeyFileFlag: "key.pem",
+			},
+			false,
+		},
+		{
+			"github app and key set and should be successful",
+			map[string]interface{}{
+				GHAppIDFlag:  "1",
+				GHAppKeyFlag: "-----BEGIN RSA PRIVATE KEY-----",
 			},
 			false,
 		},

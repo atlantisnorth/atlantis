@@ -68,7 +68,7 @@ func (c *GithubUserCredentials) GetToken() (string, error) {
 // GithubAppCredentials implements GithubCredentials for github app installation token flow.
 type GithubAppCredentials struct {
 	AppID          int64
-	KeyPath        string
+	Key            []byte
 	Hostname       string
 	apiURL         *url.URL
 	installationID int64
@@ -128,7 +128,7 @@ func (c *GithubAppCredentials) getInstallationID() (int64, error) {
 
 	tr := http.DefaultTransport
 	// A non-installation transport
-	t, err := ghinstallation.NewAppsTransportKeyFromFile(tr, c.AppID, c.KeyPath)
+	t, err := ghinstallation.NewAppsTransport(tr, c.AppID, c.Key)
 	if err != nil {
 		return 0, err
 	}
@@ -163,7 +163,7 @@ func (c *GithubAppCredentials) transport() (*ghinstallation.Transport, error) {
 	}
 
 	tr := http.DefaultTransport
-	itr, err := ghinstallation.NewKeyFromFile(tr, c.AppID, installationID, c.KeyPath)
+	itr, err := ghinstallation.New(tr, c.AppID, installationID, c.Key)
 	if err == nil {
 		apiURL := c.getAPIURL()
 		itr.BaseURL = strings.TrimSuffix(apiURL.String(), "/")
