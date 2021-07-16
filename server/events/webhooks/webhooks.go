@@ -23,7 +23,10 @@ import (
 	"github.com/runatlantis/atlantis/server/logging"
 )
 
-const SlackKind = "slack"
+const (
+	SlackKind string = "slack"
+	PostKind  string = "post"
+)
 const ApplyEvent = "apply"
 
 //go:generate pegomock generate -m --use-experimental-model-gen --package mocks -o mocks/mock_sender.go Sender
@@ -54,6 +57,7 @@ type Config struct {
 	WorkspaceRegex string
 	Kind           string
 	Channel        string
+	URL            string
 }
 
 func NewMultiWebhookSender(configs []Config, client SlackClient) (*MultiWebhookSender, error) {
@@ -72,18 +76,24 @@ func NewMultiWebhookSender(configs []Config, client SlackClient) (*MultiWebhookS
 		switch c.Kind {
 		case SlackKind:
 			if !client.TokenIsSet() {
-				return nil, errors.New("must specify top-level \"slack-token\" if using a webhook of \"kind: slack\"")
+				return nil, fmt.Errorf("must specify top-level \"slack-token\" if using a webhook of \"kind: %s\"", SlackKind)
 			}
 			if c.Channel == "" {
-				return nil, errors.New("must specify \"channel\" if using a webhook of \"kind: slack\"")
+				return nil, fmt.Errorf("must specify \"channel\" if using a webhook of \"kind: %s\"", SlackKind)
 			}
 			slack, err := NewSlack(r, c.Channel, client)
 			if err != nil {
 				return nil, err
 			}
 			webhooks = append(webhooks, slack)
+		case PostKind:
+			if c.URL == "" {
+				return nil, fmt.Errorf("must specify \"url\" if using a webhook of \"kind: %s\"", PostKind)
+			}
+			post := NewPost(c.URL)
+			webhooks = append(webhooks, post)
 		default:
-			return nil, fmt.Errorf("\"kind: %s\" not supported. Only \"kind: %s\" is supported right now", c.Kind, SlackKind)
+			return nil, fmt.Errorf("\"kind: %s\" not supported. Only \"%s\" and \"%s\" are supported right now", c.Kind, SlackKind, PostKind)
 		}
 	}
 
@@ -96,7 +106,7 @@ func NewMultiWebhookSender(configs []Config, client SlackClient) (*MultiWebhookS
 func (w *MultiWebhookSender) Send(log logging.SimpleLogging, result ApplyResult) error {
 	for _, w := range w.Webhooks {
 		if err := w.Send(log, result); err != nil {
-			log.Warn("error sending slack webhook: %s", err)
+			log.Warn("error sending webhook: %s", err)
 		}
 	}
 	return nil

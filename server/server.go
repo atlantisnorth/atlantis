@@ -122,6 +122,9 @@ type WebhookConfig struct {
 	// Channel is the channel to send this webhook to. It only applies to
 	// slack webhooks. Should be without '#'.
 	Channel string `mapstructure:"channel"`
+	// Url is the webhook url to send a POST request to. It only applies to
+	// post webhooks.
+	URL string `mapstructure:"url"`
 }
 
 // NewServer returns a new server. If there are issues starting the server or
@@ -251,6 +254,7 @@ func NewServer(userConfig UserConfig, config Config) (*Server, error) {
 			Event:          c.Event,
 			Kind:           c.Kind,
 			WorkspaceRegex: c.WorkspaceRegex,
+			URL:            c.URL,
 		}
 		webhooksConfig = append(webhooksConfig, config)
 	}
